@@ -36,7 +36,7 @@ ai = AiPlayer(user_ball)
 score = 0
 canvas.create_text(WIDTH*0.70, 25, text="Score: ", fill="red", font=('Helvetica 15 bold'))
 my_score = canvas.create_text(WIDTH*0.80, 25, text=score, fill="red", font=('Helvetica 15 bold'))
-ai.train(10000)
+ai.train(1000)
 
 # Main Loop
 while True:
