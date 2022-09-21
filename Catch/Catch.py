@@ -58,7 +58,7 @@ while True:
 
     user_ball.move()
 
-
+#TODO: Need to change below to be methods so that I can choose between running the game with a controllable user or an AI user
 
 #ai make move
     '''actions = ai.get_available_moves()
