@@ -121,14 +121,14 @@ class AiPlayer:
             else:
                 fall_states.append(state[i])
 
-        distances = []
+        distances = {}
         for s in states_to_check:
-            distances.append(self.get_distance(s))
+            distances.update({s: self.get_distance(s)})
 
-        distance = min(distances)
-
-        #distance = self.get_distance(state)
-        new_state = (state[0],state[1]+4,state[2]+action[0],state[3])
+        distance = min(distances.values())
+        closest_state = [key for key, value in distances.items() if value == min(distances.values())]
+        
+        new_state = (closest_state[0][0],closest_state[0][1]+4,closest_state[0][2]+action[0],closest_state[0][3])
         new_distance = self.get_distance(new_state)
         state_feature = distance - new_distance
 
@@ -149,133 +149,171 @@ class AiPlayer:
         catch_count = 0
         count = 0
         #Play game n times
-        for i in range(n):
-            count+=1
-            fall_balls = []
-            fall_ball = (randrange(500),0)
-            fall_balls.append(fall_ball)
+        
+        count+=1
+        fall_balls = []
+        fall_ball = (randrange(500),0)
+        fall_balls.append(fall_ball)
+        
+        #print(f"Playing training game {i + 1}")
+        f1 = fall_ball[0]
+        f2 = fall_ball[1]
+        u1 = randrange(500)
+        u2 = 500
+        #state = (f1, f2, u1, u2)
+        state = (f1, f2, u1, u2)
+        last = {
+            "state":None,"action":None
+        }
+        normalize_ball_drop = 0
+        
+        # Game loop
+        while True:
             #updates decreases epsilon and increases the discount factor based on the number of n
             if self.epsilon > 0.01:
-                self.epsilon -= (1/n)
+                self.epsilon -= (1/(n*50))
             if self.discount < 0.99:
-                self.discount += (1/n)
-            print(f"Playing training game {i + 1}")
-            f1 = fall_ball[0]
-            f2 = fall_ball[1]
-            u1 = state[2] if i > 0 else randrange(500)
-            u2 = 500
-            #state = (f1, f2, u1, u2)
-            state = (f1, f2, u1, u2)
-            last = {
-                "state":None,"action":None
-            }
-            normalize_ball_drop = 0        
-            # Game loop
-            while True:
-                state_list = []
-                
-                
-                action = self.guess_best_move(state)
-                 # Keep track of last state and action
-
-                last["state"] = state
-                last["action"] = action
-                
-                '''# create a new training fall ball at a certain rate
-                if randrange(100*1.25) < (self.FALL_BALL_RATE*100):
-                    fall_balls.append(fall_ball)'''
-                '''normalize_ball_drop += 1
-                if randrange(40) < (FALL_BALL_RATE * 100):
-                    if normalize_ball_drop >= 30:
-                        state_list.append(randrange(500))
-                        state_list.append(0)
-                        normalize_ball_drop = 0'''
-                
-                
-                #drop all of the fall balls in the current state and append them to the state list
-                for k in range(len(state)-2):
-                    if k % 2 != 0:
-                        state_list.append(state[k]+4)    
-                    else:
-                        state_list.append(state[k])
-                    
-                # Apply the actions to the end of the state list
-                state_list.append(state[len(state)-2]+action[0])
-                state_list.append(state[len(state)-1]+action[1])
-                
-                # assingn the state as a tuple of the state list
-                state = tuple(state_list)
-                
-                #correct for going to far left or right.
-                if state[len(state)-2] > 500:
-                    
-                    state_list.pop()
-                    x = state_list.pop()
-                    new_x = x - 500
-                    state_list.append(new_x)
-                    state_list.append(500)
-                    state = tuple(state_list)
-
-                if state[len(state)-2] < 0:
-                    state_list.pop()
-                    x = state_list.pop()
-                    new_x = x + 500
-                    state_list.append(new_x)
-                    state_list.append(500)
-                    state = 0
-                    state = tuple(state_list)
-
-                #print(state)
-                # if game is over get the proper reward
-                
+                self.discount += (1/(n*50))
+            state_list = []
             
-                if state[1] >= 500:
-                    #if player catches the ball
-                    if ((state[0] >= (state[2] - 12.5)) and (state[0] <= (state[2] + 12.5))):
-                        self.update_model(
-                            last["state"],
-                            last["action"],
-                            state,
-                            1
-                        )
-                        catch_count+=1
-                        print("catch")
-                        break
-                    # if player doesn't catch the ball
-                    elif ((state[0] <= (state[2] - 12.5)) or (state[0] >= (state[2] + 12.5))):
-                        self.update_model(
-                            last["state"],
-                            last["action"],
-                            state,
-                            0
-                        )
-                        print("no Catch")
-                        break       
-                # if the game is not over, continue
+            action = self.guess_best_move(state)
+                # Keep track of last state and action
+
+            last["state"] = state
+            last["action"] = action
+            
+            # create a new training fall ball at a certain rate
+            '''if randrange(100*1.25) < (self.FALL_BALL_RATE*100):
+                fall_balls.append(fall_ball)'''
+            normalize_ball_drop += 1
+            if randrange(30) < (FALL_BALL_RATE * 100):
+                if normalize_ball_drop >= 30:
+                    state_list.append(randrange(500))
+                    state_list.append(0)
+                    normalize_ball_drop = 0
+            
+            
+            #drop all of the fall balls in the current state and append them to the state list
+            for k in range(len(state)-2):
+                if k % 2 != 0:
+                    state_list.append(state[k]+4)    
                 else:
-                    if ((state[0] >= (state[2] - 12.5)) and (state[0] <= (state[2] + 12.5))):
-                        self.update_model(
-                            last["state"],
-                            last["action"],
-                            state,
-                            0
-                        )
-                    
-                    '''self.update_model(
+                    state_list.append(state[k])
+                
+            # Apply the actions to the end of the state list
+            state_list.append(state[len(state)-2]+action[0])
+            state_list.append(state[len(state)-1]+action[1])
+            
+            # assingn the state as a tuple of the state list
+            state = tuple(state_list)
+            
+            #correct for going to far left or right.
+            if state[len(state)-2] > 500:
+                
+                state_list.pop()
+                x = state_list.pop()
+                new_x = x - 500
+                state_list.append(new_x)
+                state_list.append(500)
+                state = tuple(state_list)
+
+            if state[len(state)-2] < 0:
+                state_list.pop()
+                x = state_list.pop()
+                new_x = x + 500
+                state_list.append(new_x)
+                state_list.append(500)
+                state = 0
+                state = tuple(state_list)
+
+            #print(state)
+            
+            
+            for b in range(len(state)-2):
+                if b % 2 != 0:
+                    # if ball completes fall, get the proper reward
+                    if state[b] >= 500:
+                        
+                        count += 1
+                        #if player catches the ball
+                        if ((state[b-1] >= (state[len(state)-2] - 12.5)) and (state[b-1] <= (state[len(state)-2] + 12.5))):
+                            self.update_model(
+                                last["state"],
+                                last["action"],
+                                state,
+                                1
+                            )
+                            catch_count+=1
+                            print("catch")
+                            edit_list = list(state)
+                            edit_list.pop(b)
+                            edit_list.pop(b-1)
+                            state = tuple(edit_list)
+                        # if player doesn't catch the ball
+                        elif ((state[b-1] <= (state[len(state)-2] - 12.5)) or (state[b-1] >= (state[len(state)-2] + 12.5))):
+                            self.update_model(
+                                last["state"],
+                                last["action"],
+                                state,
+                                0
+                            )
+                            print("no Catch")
+                            edit_list = list(state)
+                            edit_list.pop(b)
+                            edit_list.pop(b-1)
+                            state = tuple(edit_list)
+                    else:
+                        if ((state[b-1] >= (state[len(state)-2] - 12.5)) and (state[b-1] <= (state[len(state)-2] + 12.5))):
+                            self.update_model(
+                                last["state"],
+                                last["action"],
+                                state,
+                                0
+                            )  
+            
+            if count >= n:
+                break
+            '''if state[1] >= 500:
+                #if player catches the ball
+                if ((state[0] >= (state[len(state)-2] - 12.5)) and (state[0] <= (state[len(state)-2] + 12.5))):
+                    self.update_model(
+                        last["state"],
+                        last["action"],
+                        state,
+                        1
+                    )
+                    catch_count+=1
+                    print("catch")
+                    break
+                # if player doesn't catch the ball
+                elif ((state[0] <= (state[len(state)-2] - 12.5)) or (state[0] >= (state[len(state)-2] + 12.5))):
+                    self.update_model(
+                        last["state"],
+                        last["action"],
+                        state,
+                        0
+                    )
+                    print("no Catch")
+                    break       
+            # if the game is not over, continue
+            else:
+                if ((state[0] >= (state[len(state)-2] - 12.5)) and (state[0] <= (state[len(state)-2] + 12.5))):
+                    self.update_model(
                         last["state"],
                         last["action"],
                         state,
                         0
                     )'''
-                    #print(state)
-        print(f"Catch Count: {catch_count}")
-        print(f"Not Catch Count: {count - catch_count}")
-        print(f"percentage caugh: {(catch_count/count)*100}")
-        #print(self.q.values())
                 
-
+                
+                #print(state)
+    '''print(f"Catch Count: {catch_count}")
+    print(f"Not Catch Count: {count - catch_count}")
+    print(f"percentage caugh: {(catch_count/count)*100}")
+    #print(self.q.values())'''
             
 
+        
 
 
-    
+
