@@ -9,6 +9,8 @@ from sklearn.linear_model import SGDRegressor
 import math
 # state is a tuple f = fall_ball, u = user_ball.  state = (f1, f2, u1, u2)
 #
+FALL_BALL_RATE = 0.016
+
 
 class AiPlayer:
     def __init__(self, ball):
@@ -16,7 +18,7 @@ class AiPlayer:
         self.alpha = 1
         self.buffer = {}
         self.reg = SGDRegressor()
-        
+        self.FALL_BALL_RATE = 0.016
         self.epsilon = 0.9
         self.discount = 0.1
 
@@ -97,10 +99,35 @@ class AiPlayer:
         self.ball.change_velocity(move[0],move[1])
         
     def create_feature_vector(self, state, action):
+        # Accepts a tuple that can have n fall balls and one user ball.
+        # We want to take the state that may have multiple balls and get the distance for each ball and return a feature vector 
+        # of only the closest ball to the player
         # going to make a feature that is the distance of the fall ball and user ball to represent the state and 
         # maybe minus the distance of the fall ball and user ball
         # assuming that the particular action was taken.
-        distance = self.get_distance(state)
+
+
+        fall_balls_amount = (len(state)-2)/2
+        user_ball_tuple = (state[len(state)-2], state[len(state)-1])
+        fall_states = []
+        states_to_check = []
+        for i in range(int(fall_balls_amount*2)):
+            if i != 0 and i % 2 != 0:
+                fall_states.append(state[i])
+                fall_states.append(user_ball_tuple[0])
+                fall_states.append(user_ball_tuple[1])
+                states_to_check.append((fall_states[0],fall_states[1],fall_states[2],fall_states[3]))
+                fall_states = []
+            else:
+                fall_states.append(state[i])
+
+        distances = []
+        for s in states_to_check:
+            distances.append(self.get_distance(s))
+
+        distance = min(distances)
+
+        #distance = self.get_distance(state)
         new_state = (state[0],state[1]+4,state[2]+action[0],state[3])
         new_distance = self.get_distance(new_state)
         state_feature = distance - new_distance
@@ -124,15 +151,17 @@ class AiPlayer:
         #Play game n times
         for i in range(n):
             count+=1
-            
+            fall_balls = []
+            fall_ball = (randrange(500),0)
+            fall_balls.append(fall_ball)
             #updates decreases epsilon and increases the discount factor based on the number of n
             if self.epsilon > 0.01:
                 self.epsilon -= (1/n)
             if self.discount < 0.99:
                 self.discount += (1/n)
             print(f"Playing training game {i + 1}")
-            f1 = randrange(500)
-            f2 = 0
+            f1 = fall_ball[0]
+            f2 = fall_ball[1]
             u1 = state[2] if i > 0 else randrange(500)
             u2 = 500
             #state = (f1, f2, u1, u2)
@@ -140,10 +169,10 @@ class AiPlayer:
             last = {
                 "state":None,"action":None
             }
-            
+            normalize_ball_drop = 0        
             # Game loop
             while True:
-
+                state_list = []
                 
                 
                 action = self.guess_best_move(state)
@@ -152,17 +181,51 @@ class AiPlayer:
                 last["state"] = state
                 last["action"] = action
                 
-                #print(state, action)
-                state = (state[0], state[1]+4, state[2]+action[0], state[3]+action[1])
+                '''# create a new training fall ball at a certain rate
+                if randrange(100*1.25) < (self.FALL_BALL_RATE*100):
+                    fall_balls.append(fall_ball)'''
+                '''normalize_ball_drop += 1
+                if randrange(40) < (FALL_BALL_RATE * 100):
+                    if normalize_ball_drop >= 30:
+                        state_list.append(randrange(500))
+                        state_list.append(0)
+                        normalize_ball_drop = 0'''
                 
+                
+                #drop all of the fall balls in the current state and append them to the state list
+                for k in range(len(state)-2):
+                    if k % 2 != 0:
+                        state_list.append(state[k]+4)    
+                    else:
+                        state_list.append(state[k])
+                    
+                # Apply the actions to the end of the state list
+                state_list.append(state[len(state)-2]+action[0])
+                state_list.append(state[len(state)-1]+action[1])
+                
+                # assingn the state as a tuple of the state list
+                state = tuple(state_list)
                 
                 #correct for going to far left or right.
-                if state[2] > 500:
-                    state = (state[0],state[1],state[2]-500,state[3])
-                if state[2] < 0:
-                    state = (state[0],state[1],state[2]+500,state[3])
+                if state[len(state)-2] > 500:
+                    
+                    state_list.pop()
+                    x = state_list.pop()
+                    new_x = x - 500
+                    state_list.append(new_x)
+                    state_list.append(500)
+                    state = tuple(state_list)
 
-                
+                if state[len(state)-2] < 0:
+                    state_list.pop()
+                    x = state_list.pop()
+                    new_x = x + 500
+                    state_list.append(new_x)
+                    state_list.append(500)
+                    state = 0
+                    state = tuple(state_list)
+
+                #print(state)
                 # if game is over get the proper reward
                 
             
@@ -184,7 +247,7 @@ class AiPlayer:
                             last["state"],
                             last["action"],
                             state,
-                            -1
+                            0
                         )
                         print("no Catch")
                         break       
