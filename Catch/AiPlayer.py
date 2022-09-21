@@ -99,7 +99,7 @@ class AiPlayer:
         self.ball.change_velocity(move[0],move[1])
         
     def create_feature_vector(self, state, action):
-        # Accepts a tuple that can have n fall balls and one user ball.
+        # Accepts a state tuple that can have n fall balls, one user ball and an action Tuple.
         # We want to take the state that may have multiple balls and get the distance for each ball and return a feature vector 
         # of only the closest ball to the player
         # going to make a feature that is the distance of the fall ball and user ball to represent the state and 
