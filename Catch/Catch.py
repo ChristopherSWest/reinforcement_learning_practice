@@ -40,7 +40,7 @@ ai = AiPlayer(user_ball)
 score = 0
 canvas.create_text(WIDTH*0.70, 25, text="Score: ", fill="red", font=('Helvetica 15 bold'))
 my_score = canvas.create_text(WIDTH*0.80, 25, text=score, fill="red", font=('Helvetica 15 bold'))
-ai.train(1000)
+ai.train(2000)
 normalize_ball_drop = 0
 # Main Loop
 while True:
@@ -96,10 +96,10 @@ while True:
             ball.delete_ball()
             remove_ball = fall_balls.pop(fall_balls.index(ball))
 
-    if(user_ball.center[0]>500):
+    if(ai.ball.center[0]>500):
         ai.ball.canvas.move(ai.ball.image, -WIDTH, ai.ball.yVelocity)
 
-    if(user_ball.center[0]<0):
+    if(ai.ball.center[0]<0):
         ai.ball.canvas.move(ai.ball.image, WIDTH, ai.ball.yVelocity)
 
 
@@ -123,14 +123,14 @@ while True:
 
             # removes the ball from the game
             ball.delete_ball()
-            remove_ball = fall_balls.pop(fall_balls.index(ball))'''
+            remove_ball = fall_balls.pop(fall_balls.index(ball))
             
 
     if(user_ball.center[0]>500):
         user_ball.canvas.move(user_ball.image, -WIDTH, user_ball.yVelocity)
 
     if(user_ball.center[0]<0):
-        user_ball.canvas.move(user_ball.image, WIDTH, user_ball.yVelocity)
+        user_ball.canvas.move(user_ball.image, WIDTH, user_ball.yVelocity)'''
                 
     window.update()
     time.sleep(UPDATE)

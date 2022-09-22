@@ -141,8 +141,23 @@ class AiPlayer:
         return feature_vector
 
     def get_distance(self, state):
-        distance_vector = [abs(state[0]-state[2]),abs(state[1]-state[3])]
-        distance = math.sqrt((distance_vector[0] * distance_vector[0]) + (distance_vector[1] * distance_vector[1]))
+        # Since the player can move from one side of the screen to the other by moving past the edge of either side, this method
+        # will return the closest distance based on that fact. This will require pretending the that the user ball exists at it's current position, + 500 on the x axis, and 
+        # also - 500 on the x value.  This will return the closest distance.
+        
+        distance_vectors = []
+        distances = []
+
+        distance_vectors.append([abs(state[0]-state[2]),abs(state[1]-state[3])])
+        distance_vectors.append([abs(state[0]-(state[2]+500)),abs(state[1]-state[3])])
+        distance_vectors.append([abs(state[0]-(state[2]-500)),abs(state[1]-state[3])])
+
+        #distance_vector = [abs(state[0]-state[2]),abs(state[1]-state[3])]
+        for distance_vector in distance_vectors:
+            #distance = math.sqrt((distance_vector[0] * distance_vector[0]) + (distance_vector[1] * distance_vector[1]))
+            distances.append(math.sqrt((distance_vector[0] * distance_vector[0]) + (distance_vector[1] * distance_vector[1])))
+
+        distance = min(distances)
         return distance
 
     def train(self, n):
