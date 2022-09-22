@@ -161,6 +161,7 @@ class AiPlayer:
         return distance
 
     def train(self, n):
+
         catch_count = 0
         count = 0
         #Play game n times
@@ -288,47 +289,3 @@ class AiPlayer:
             
             if count >= n:
                 break
-            '''if state[1] >= 500:
-                #if player catches the ball
-                if ((state[0] >= (state[len(state)-2] - 12.5)) and (state[0] <= (state[len(state)-2] + 12.5))):
-                    self.update_model(
-                        last["state"],
-                        last["action"],
-                        state,
-                        1
-                    )
-                    catch_count+=1
-                    print("catch")
-                    break
-                # if player doesn't catch the ball
-                elif ((state[0] <= (state[len(state)-2] - 12.5)) or (state[0] >= (state[len(state)-2] + 12.5))):
-                    self.update_model(
-                        last["state"],
-                        last["action"],
-                        state,
-                        0
-                    )
-                    print("no Catch")
-                    break       
-            # if the game is not over, continue
-            else:
-                if ((state[0] >= (state[len(state)-2] - 12.5)) and (state[0] <= (state[len(state)-2] + 12.5))):
-                    self.update_model(
-                        last["state"],
-                        last["action"],
-                        state,
-                        0
-                    )'''
-                
-                
-                #print(state)
-    '''print(f"Catch Count: {catch_count}")
-    print(f"Not Catch Count: {count - catch_count}")
-    print(f"percentage caugh: {(catch_count/count)*100}")
-    #print(self.q.values())'''
-            
-
-        
-
-
-
