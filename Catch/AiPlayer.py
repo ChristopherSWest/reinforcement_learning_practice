@@ -81,7 +81,6 @@ class AiPlayer:
         else:
             if len(best_moves) > 1:
                 best = best_moves[randrange(len(best_moves))]
-                #print(best)
                 
                 return best
             else:
@@ -148,9 +147,7 @@ class AiPlayer:
         distance_vectors.append([abs(state[0]-(state[2]+Constants.WIDTH)),abs(state[1]-state[3])])
         distance_vectors.append([abs(state[0]-(state[2]-Constants.WIDTH)),abs(state[1]-state[3])])
 
-        #distance_vector = [abs(state[0]-state[2]),abs(state[1]-state[3])]
         for distance_vector in distance_vectors:
-            #distance = math.sqrt((distance_vector[0] * distance_vector[0]) + (distance_vector[1] * distance_vector[1]))
             distances.append(math.sqrt((distance_vector[0] * distance_vector[0]) + (distance_vector[1] * distance_vector[1])))
 
         distance = min(distances)
@@ -167,12 +164,11 @@ class AiPlayer:
         fall_ball = (randrange(Constants.WIDTH),0)
         fall_balls.append(fall_ball)
         
-        #print(f"Playing training game {i + 1}")
         f1 = fall_ball[0]
         f2 = fall_ball[1]
         u1 = randrange(Constants.WIDTH)
         u2 = Constants.HEIGHT
-        #state = (f1, f2, u1, u2)
+    
         state = (f1, f2, u1, u2)
         last = {
             "state":None,"action":None
@@ -189,8 +185,8 @@ class AiPlayer:
             state_list = []
             
             action = self.guess_best_move(state)
-                # Keep track of last state and action
 
+            # Keep track of last state and action
             last["state"] = state
             last["action"] = action
             
@@ -235,8 +231,6 @@ class AiPlayer:
                 state_list.append(Constants.HEIGHT)
                 state = 0
                 state = tuple(state_list)
-
-            #print(state)
             
             
             for b in range(len(state)-2):
@@ -245,6 +239,7 @@ class AiPlayer:
                     if state[b] >= Constants.HEIGHT:
                         
                         count += 1
+                        
                         #if player catches the ball
                         if ((state[b-1] >= (state[len(state)-2] - (Constants.USER_SIZE/2))) and (state[b-1] <= (state[len(state)-2] + (Constants.USER_SIZE/2)))):
                             self.update_model(
@@ -259,6 +254,7 @@ class AiPlayer:
                             edit_list.pop(b)
                             edit_list.pop(b-1)
                             state = tuple(edit_list)
+
                         # if player doesn't catch the ball
                         elif ((state[b-1] <= (state[len(state)-2] - (Constants.USER_SIZE/2))) or (state[b-1] >= (state[len(state)-2] + (Constants.USER_SIZE/2)))):
                             self.update_model(

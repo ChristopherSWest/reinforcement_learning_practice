@@ -53,9 +53,7 @@ class CatchGame:
                 state_list.append(int(ball.center[0]))
                 state_list.append(int(ball.center[1]))
             state_list.append(int(self.ai.ball.center[0]))
-            state_list.append(int(self.ai.ball.center[1]))
-            
-        #TODO: Need to change below to be methods so that I can choose between running the game with a controllable user or an AI user
+            state_list.append(int(self.ai.ball.center[1]))            
 
         #ai make move
             actions = self.ai.get_available_moves()
@@ -81,9 +79,7 @@ class CatchGame:
                         self.canvas.delete(my_score)
                         my_score = self.canvas.create_text(Constants.WIDTH*0.80, 25, text=score, fill="red", font=('Helvetica 15 bold'))
 
-                    #ball.canvas.move(ball.image,randrange(ball.canvas.winfo_width())-ball.center[0],(ball.yVelocity-ball.canvas.winfo_height()))
 
-                    #removes the ball from the game
                     ball.delete_ball()
                     remove_ball = self.fall_balls.pop(self.fall_balls.index(ball))
 
@@ -139,10 +135,6 @@ class CatchGame:
                         self.canvas.delete(my_score)
                         my_score = self.canvas.create_text(Constants.WIDTH*0.80, 25, text=score, fill="red", font=('Helvetica 15 bold'))
 
-                    # resets the ball at the top
-                    #ball.canvas.move(ball.image,randrange(ball.canvas.winfo_width())-ball.center[0],(ball.yVelocity-ball.canvas.winfo_height()))
-
-                    # removes the ball from the game
                     ball.delete_ball()
                     remove_ball = self.fall_balls.pop(self.fall_balls.index(ball))
                     
