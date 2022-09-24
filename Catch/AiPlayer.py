@@ -7,10 +7,7 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import SGDRegressor
 import math
-# state is a tuple f = fall_ball, u = user_ball.  state = (f1, f2, u1, u2)
-#
-FALL_BALL_RATE = 0.016
-
+import Constants
 
 class AiPlayer:
     def __init__(self, ball):
@@ -18,7 +15,6 @@ class AiPlayer:
         self.alpha = 1
         self.buffer = {}
         self.reg = SGDRegressor()
-        self.FALL_BALL_RATE = 0.016
         self.epsilon = 0.9
         self.discount = 0.1
 
@@ -93,7 +89,7 @@ class AiPlayer:
                 return best_moves[0]
 
     def get_available_moves(self):
-        return [(-5,0),(0,0),(5,0)]
+        return [(-Constants.USER_SPEED,0),(0,0),(Constants.USER_SPEED,0)]
     
     def make_move(self, move):
         self.ball.change_velocity(move[0],move[1])
@@ -128,11 +124,11 @@ class AiPlayer:
         distance = min(distances.values())
         closest_state = [key for key, value in distances.items() if value == min(distances.values())]
         
-        new_state = (closest_state[0][0],closest_state[0][1]+4,closest_state[0][2]+action[0],closest_state[0][3])
+        new_state = (closest_state[0][0],closest_state[0][1]+Constants.FALL_SPEED,closest_state[0][2]+action[0],closest_state[0][3])
         new_distance = self.get_distance(new_state)
         state_feature = distance - new_distance
 
-        if action == (-5,0):
+        if action == (-Constants.USER_SPEED,0):
             feature_vector = [state_feature, 0 ,0 ,1]
         elif action == (0,0):
             feature_vector = [0, state_feature, 0 ,1]
@@ -142,15 +138,15 @@ class AiPlayer:
 
     def get_distance(self, state):
         # Since the player can move from one side of the screen to the other by moving past the edge of either side, this method
-        # will return the closest distance based on that fact. This will require pretending the that the user ball exists at it's current position, + 500 on the x axis, and 
-        # also - 500 on the x value.  This will return the closest distance.
+        # will return the closest distance based on that fact. This will require pretending the that the user ball exists at it's current position, + the canvas width on the x axis, and 
+        # also - the canvas width on the x value.  This will return the closest distance.
         
         distance_vectors = []
         distances = []
 
         distance_vectors.append([abs(state[0]-state[2]),abs(state[1]-state[3])])
-        distance_vectors.append([abs(state[0]-(state[2]+500)),abs(state[1]-state[3])])
-        distance_vectors.append([abs(state[0]-(state[2]-500)),abs(state[1]-state[3])])
+        distance_vectors.append([abs(state[0]-(state[2]+Constants.WIDTH)),abs(state[1]-state[3])])
+        distance_vectors.append([abs(state[0]-(state[2]-Constants.WIDTH)),abs(state[1]-state[3])])
 
         #distance_vector = [abs(state[0]-state[2]),abs(state[1]-state[3])]
         for distance_vector in distance_vectors:
@@ -168,14 +164,14 @@ class AiPlayer:
         
         count+=1
         fall_balls = []
-        fall_ball = (randrange(500),0)
+        fall_ball = (randrange(Constants.WIDTH),0)
         fall_balls.append(fall_ball)
         
         #print(f"Playing training game {i + 1}")
         f1 = fall_ball[0]
         f2 = fall_ball[1]
-        u1 = randrange(500)
-        u2 = 500
+        u1 = randrange(Constants.WIDTH)
+        u2 = Constants.HEIGHT
         #state = (f1, f2, u1, u2)
         state = (f1, f2, u1, u2)
         last = {
@@ -199,12 +195,10 @@ class AiPlayer:
             last["action"] = action
             
             # create a new training fall ball at a certain rate
-            '''if randrange(100*1.25) < (self.FALL_BALL_RATE*100):
-                fall_balls.append(fall_ball)'''
             normalize_ball_drop += 1
-            if randrange(30) < (FALL_BALL_RATE * 100):
+            if randrange(30) < (Constants.FALL_BALL_RATE * 100):
                 if normalize_ball_drop >= 30:
-                    state_list.append(randrange(500))
+                    state_list.append(randrange(Constants.WIDTH))
                     state_list.append(0)
                     normalize_ball_drop = 0
             
@@ -212,7 +206,7 @@ class AiPlayer:
             #drop all of the fall balls in the current state and append them to the state list
             for k in range(len(state)-2):
                 if k % 2 != 0:
-                    state_list.append(state[k]+4)    
+                    state_list.append(state[k]+Constants.FALL_SPEED)    
                 else:
                     state_list.append(state[k])
                 
@@ -224,21 +218,21 @@ class AiPlayer:
             state = tuple(state_list)
             
             #correct for going to far left or right.
-            if state[len(state)-2] > 500:
+            if state[len(state)-2] > Constants.WIDTH:
                 
                 state_list.pop()
                 x = state_list.pop()
-                new_x = x - 500
+                new_x = x - Constants.WIDTH
                 state_list.append(new_x)
-                state_list.append(500)
+                state_list.append(Constants.HEIGHT)
                 state = tuple(state_list)
 
             if state[len(state)-2] < 0:
                 state_list.pop()
                 x = state_list.pop()
-                new_x = x + 500
+                new_x = x + Constants.WIDTH
                 state_list.append(new_x)
-                state_list.append(500)
+                state_list.append(Constants.HEIGHT)
                 state = 0
                 state = tuple(state_list)
 
@@ -248,11 +242,11 @@ class AiPlayer:
             for b in range(len(state)-2):
                 if b % 2 != 0:
                     # if ball completes fall, get the proper reward
-                    if state[b] >= 500:
+                    if state[b] >= Constants.HEIGHT:
                         
                         count += 1
                         #if player catches the ball
-                        if ((state[b-1] >= (state[len(state)-2] - 12.5)) and (state[b-1] <= (state[len(state)-2] + 12.5))):
+                        if ((state[b-1] >= (state[len(state)-2] - (Constants.USER_SIZE/2))) and (state[b-1] <= (state[len(state)-2] + (Constants.USER_SIZE/2)))):
                             self.update_model(
                                 last["state"],
                                 last["action"],
@@ -266,7 +260,7 @@ class AiPlayer:
                             edit_list.pop(b-1)
                             state = tuple(edit_list)
                         # if player doesn't catch the ball
-                        elif ((state[b-1] <= (state[len(state)-2] - 12.5)) or (state[b-1] >= (state[len(state)-2] + 12.5))):
+                        elif ((state[b-1] <= (state[len(state)-2] - (Constants.USER_SIZE/2))) or (state[b-1] >= (state[len(state)-2] + (Constants.USER_SIZE/2)))):
                             self.update_model(
                                 last["state"],
                                 last["action"],
@@ -279,7 +273,7 @@ class AiPlayer:
                             edit_list.pop(b-1)
                             state = tuple(edit_list)
                     else:
-                        if ((state[b-1] >= (state[len(state)-2] - 12.5)) and (state[b-1] <= (state[len(state)-2] + 12.5))):
+                        if ((state[b-1] >= (state[len(state)-2] - (Constants.USER_SIZE/2))) and (state[b-1] <= (state[len(state)-2] + (Constants.USER_SIZE/2)))):
                             self.update_model(
                                 last["state"],
                                 last["action"],
