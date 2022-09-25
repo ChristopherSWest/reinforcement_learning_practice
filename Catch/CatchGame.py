@@ -12,8 +12,7 @@ class CatchGame:
 
     def __init__(self, window):
         self.window = window
-        self.canvas = Canvas(self.window, width=Constants.WIDTH, height=Constants.HEIGHT)
-        self.canvas.pack()
+        self.canvas = Canvas(self.window, width=Constants.WIDTH, height=Constants.HEIGHT)        
         self.fall_balls = []
         self.fall_ball = Ball(self.canvas, randrange(Constants.WIDTH),0,Constants.FALL_BALL_SIZE)
         self.user_ball = Ball(self.canvas, randrange(Constants.WIDTH), Constants.HEIGHT, Constants.USER_SIZE)
@@ -29,7 +28,7 @@ class CatchGame:
         self.user_ball.change_velocity(0,0)
 
     def run_ai_game(self, train_n):
-        
+        self.canvas.pack()
         score = 0
         self.canvas.create_text(Constants.WIDTH*0.70, 25, text="Score: ", fill="red", font=('Helvetica 15 bold'))
         my_score = self.canvas.create_text(Constants.WIDTH*0.80, 25, text=score, fill="red", font=('Helvetica 15 bold'))
@@ -95,7 +94,7 @@ class CatchGame:
             
 
     def run_user_game(self):
-        
+        self.canvas.pack()
         score = 0
         self.canvas.create_text(Constants.WIDTH*0.70, 25, text="Score: ", fill="red", font=('Helvetica 15 bold'))
         my_score = self.canvas.create_text(Constants.WIDTH*0.80, 25, text=score, fill="red", font=('Helvetica 15 bold'))
