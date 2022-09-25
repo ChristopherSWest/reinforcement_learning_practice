@@ -179,9 +179,9 @@ class AiPlayer:
         while True:
             #updates decreases epsilon and increases the discount factor based on the number of n
             if self.epsilon > 0.01:
-                self.epsilon -= (1/(n*50))
+                self.epsilon -= (1/(n*25))
             if self.discount < 0.99:
-                self.discount += (1/(n*50))
+                self.discount += (1/(n*25))
             state_list = []
             
             action = self.guess_best_move(state)
@@ -239,7 +239,7 @@ class AiPlayer:
                     if state[b] >= Constants.HEIGHT:
                         
                         count += 1
-                        
+
                         #if player catches the ball
                         if ((state[b-1] >= (state[len(state)-2] - (Constants.USER_SIZE/2))) and (state[b-1] <= (state[len(state)-2] + (Constants.USER_SIZE/2)))):
                             self.update_model(
