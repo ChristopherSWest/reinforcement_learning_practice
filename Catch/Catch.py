@@ -1,84 +1,40 @@
+from ast import Lambda
 from tkinter import *
-from typing import Tuple
-from AiPlayer import *
-from Ball import *
-import time
-from tkinter.tix import WINDOW
-from random import *
-
-window = Tk()
+import tkinter
+from turtle import width
+import Constants
+from CatchGame import CatchGame
 
 
+def start_ai_game(main_window, start):
+    for item in start:
+        start[item].destroy()
+    game = CatchGame(main_window)
+    game.run_ai_game(Constants.TRAIN_N)
 
+def start_person_game(main_window, start):
+    for item in start:
+        start[item].destroy()
+    game = CatchGame(main_window)
+    game.run_user_game()
 
-WIDTH = 500
-HEIGHT = 500
-UPDATE = 0.01
+# Main
+main = Tk()
+main.geometry(f'{Constants.WIDTH}x{Constants.HEIGHT}')
 
-canvas = Canvas(window, width=WIDTH, height=HEIGHT)
-canvas.pack()
-
-fall_ball = Ball(canvas, randrange(WIDTH),0,25)
-fall_ball.change_velocity(0,4)
-
-user_ball = Ball(canvas, randrange(WIDTH), HEIGHT, 25)
-
-def keydown(e):
-    if e.char == "a":
-        user_ball.change_velocity(-5,0)
-    if e.char == "d":
-        user_ball.change_velocity(5,0)
-def keyup(e):
-    user_ball.change_velocity(0,0)
-
-ai = AiPlayer(user_ball)
-
-score = 0
-canvas.create_text(WIDTH*0.70, 25, text="Score: ", fill="red", font=('Helvetica 15 bold'))
-my_score = canvas.create_text(WIDTH*0.80, 25, text=score, fill="red", font=('Helvetica 15 bold'))
-ai.train(1000)
-
-# Main Loop
-while True:
-
-    window.bind("<KeyPress>", keydown)
-    window.bind("<KeyRelease>", keyup)
-    fall_ball.move()
-
-
-#ai make move
-    actions = ai.get_available_moves()
-    tuple_state = tuple((int(fall_ball.center[0]),int(fall_ball.center[1]), int(ai.ball.center[0]),int(ai.ball.center[1])))
-    action = ai.guess_best_move(tuple_state)
-    
-    ai.make_move(action)
-    ai.ball.move()
-
-
-    
-    if(fall_ball.center[1]>(HEIGHT)):
-            
-        if (fall_ball.center[0] >= ai.ball.coordinates[0] and fall_ball.center[0] <= ai.ball.coordinates[2]):
-
-            score += 1
-            canvas.delete(my_score)
-            my_score = canvas.create_text(WIDTH*0.80, 25, text=score, fill="red", font=('Helvetica 15 bold'))
-
-        else:
-            score -= 1
-            canvas.delete(my_score)
-            my_score = canvas.create_text(WIDTH*0.80, 25, text=score, fill="red", font=('Helvetica 15 bold'))
-
-        fall_ball.canvas.move(fall_ball.image,randrange(fall_ball.canvas.winfo_width())-fall_ball.center[0],(fall_ball.yVelocity-fall_ball.canvas.winfo_height()))
-
-    if(user_ball.center[0]>500):
-        ai.ball.canvas.move(ai.ball.image, -WIDTH, ai.ball.yVelocity)
-
-    if(user_ball.center[0]<0):
-        ai.ball.canvas.move(ai.ball.image, WIDTH, ai.ball.yVelocity)
-                
-    window.update()
-    time.sleep(UPDATE)
-    
-window.mainloop()
+start_page = {}
+start_page.update({"AiGameButton": Button(main, text="AI Game", height= int(Constants.GAME_BUTTON_HEIGHT), width= int(Constants.GAME_BUTTON_WIDTH),command=lambda: start_ai_game(main, start_page))})
+start_page.update({"PersonGameButton": Button(main, text="Person Game", height= int(Constants.GAME_BUTTON_HEIGHT), width= int(Constants.GAME_BUTTON_WIDTH),command=lambda: start_person_game(main, start_page))})
+start_page.update({"Title": Label(main, text="Catch!", font= Constants.TITLE_FONT)})
+#b = Button(main, text="click", command=lambda: start_ai_game(main, b))
+for item in start_page:
+    if item == "PersonGameButton":
+        start_page[item].place(x = Constants.PERSON_BUTTON_X, y = Constants.PERSON_BUTTON_Y)
+    elif item == "AiGameButton":
+        start_page[item].place(x = Constants.AI_GAME_BUTTON_X, y = Constants.AI_GAME_BUTTON_Y)
+    elif item == "Title":
+        start_page[item].place(x = Constants.TITLE_X, y = Constants.TITLE_Y)   
+    else:
+        start_page[item].pack()
+main.mainloop()
 

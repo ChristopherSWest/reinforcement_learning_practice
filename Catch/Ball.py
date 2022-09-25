@@ -13,17 +13,12 @@ class Ball:
     def move(self):
         self.coordinates = self.canvas.coords(self.image)
         self.center = ((self.coordinates[2]+self.coordinates[0])/2,(self.coordinates[3]+self.coordinates[1])/2)
-        #print(self.coordinates, self.center)
         self.canvas.move(self.image,self.xVelocity,self.yVelocity)
-        #print(self.canvas.winfo_width())
-        
-
-
-        
-
-
+    
     def change_velocity(self, xVelocity, yVelocity):
         self.xVelocity = xVelocity
-        self.yVelocity = yVelocity
-        
+        self.yVelocity = yVelocity    
+
+    def delete_ball(self):
+        self.canvas.delete(self.image)
         
