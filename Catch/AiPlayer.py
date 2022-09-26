@@ -116,24 +116,29 @@ class AiPlayer:
             else:
                 fall_states.append(state[i])
 
-        distances = {}
-        for s in states_to_check:
-            distances.update({s: self.get_distance(s)})
+        try:
+            distances = {}
+            for s in states_to_check:
+                distances.update({s: self.get_distance(s)})
 
-        distance = min(distances.values())
-        closest_state = [key for key, value in distances.items() if value == min(distances.values())]
-        
-        new_state = (closest_state[0][0],closest_state[0][1]+Constants.FALL_SPEED,closest_state[0][2]+action[0],closest_state[0][3])
-        new_distance = self.get_distance(new_state)
-        state_feature = distance - new_distance
-
-        if action == (-Constants.USER_SPEED,0):
-            feature_vector = [state_feature, 0 ,0 ,1]
-        elif action == (0,0):
-            feature_vector = [0, state_feature, 0 ,1]
+            distance = min(distances.values())
+        except ValueError:
+            feature_vector = [0, 0, 0, 1]
         else:
-            feature_vector = [0, 0, state_feature, 1]
-        return feature_vector
+            closest_state = [key for key, value in distances.items() if value == min(distances.values())]
+            
+            new_state = (closest_state[0][0],closest_state[0][1]+Constants.FALL_SPEED,closest_state[0][2]+action[0],closest_state[0][3])
+            new_distance = self.get_distance(new_state)
+            state_feature = distance - new_distance
+
+            if action == (-Constants.USER_SPEED,0):
+                feature_vector = [state_feature, 0 ,0 ,1]
+            elif action == (0,0):
+                feature_vector = [0, state_feature, 0 ,1]
+            else:
+                feature_vector = [0, 0, state_feature, 1]
+        finally:
+            return feature_vector
 
     def get_distance(self, state):
         # Since the player can move from one side of the screen to the other by moving past the edge of either side, this method
