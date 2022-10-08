@@ -1,9 +1,7 @@
 from tkinter import *
-from typing import Tuple
 from AiPlayer import *
 from Ball import *
 import time
-from tkinter.tix import WINDOW
 from random import *
 import Constants
 
