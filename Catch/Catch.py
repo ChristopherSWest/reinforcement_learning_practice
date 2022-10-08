@@ -1,7 +1,4 @@
-from ast import Lambda
 from tkinter import *
-import tkinter
-from turtle import width
 import Constants
 from CatchGame import CatchGame
 
@@ -23,8 +20,8 @@ main = Tk()
 main.geometry(f'{Constants.WIDTH}x{Constants.HEIGHT}')
 
 start_page = {}
-start_page.update({"AiGameButton": Button(main, text="AI Game", height= int(Constants.GAME_BUTTON_HEIGHT), width= int(Constants.GAME_BUTTON_WIDTH),command=lambda: start_ai_game(main, start_page))})
-start_page.update({"PersonGameButton": Button(main, text="Person Game", height= int(Constants.GAME_BUTTON_HEIGHT), width= int(Constants.GAME_BUTTON_WIDTH),command=lambda: start_person_game(main, start_page))})
+start_page.update({"AiGameButton": Button(main, text="AI Game", font=Constants.GAME_BUTTON_FONT ,height= int(Constants.GAME_BUTTON_HEIGHT), width= int(Constants.GAME_BUTTON_WIDTH),command=lambda: start_ai_game(main, start_page))})
+start_page.update({"PersonGameButton": Button(main, text="Person Game", font=Constants.GAME_BUTTON_FONT, height= int(Constants.GAME_BUTTON_HEIGHT), width= int(Constants.GAME_BUTTON_WIDTH),command=lambda: start_person_game(main, start_page))})
 start_page.update({"Title": Label(main, text="Catch!", font= Constants.TITLE_FONT)})
 #b = Button(main, text="click", command=lambda: start_ai_game(main, b))
 for item in start_page:
