@@ -12,8 +12,10 @@ class CatchGame:
         self.window = window
         self.canvas = Canvas(self.window, width=Constants.WIDTH, height=Constants.HEIGHT)        
         self.fall_balls = []
-        self.fall_ball = Ball(self.canvas, randrange(Constants.WIDTH),0,Constants.FALL_BALL_SIZE)
-        self.user_ball = Ball(self.canvas, randrange(Constants.WIDTH), Constants.HEIGHT, Constants.USER_SIZE)
+        self.fall_ball = Ball(randrange(Constants.WIDTH),0,Constants.FALL_BALL_SIZE)
+        self.fall_ball.draw_ball(self.canvas)
+        self.user_ball = Ball(randrange(Constants.WIDTH), Constants.HEIGHT, Constants.USER_SIZE)
+        self.user_ball.draw_ball(self.canvas)
         self.ai = AiPlayer(self.user_ball)
         self.fall_balls.append(self.fall_ball)
 
@@ -40,7 +42,9 @@ class CatchGame:
                 ball.change_velocity(0,Constants.FALL_SPEED)
             if randrange(40) < (Constants.FALL_BALL_RATE * 100):
                 if normalize_ball_drop >= 30:
-                    self.fall_balls.append(Ball(self.canvas, randrange(Constants.WIDTH),0,Constants.FALL_BALL_SIZE))
+                    new_ball = Ball(randrange(Constants.WIDTH),0,Constants.FALL_BALL_SIZE)
+                    new_ball.draw_ball(self.canvas)
+                    self.fall_balls.append(new_ball)
                     normalize_ball_drop = 0
             self.window.bind("<KeyPress>", self.keydown)
             self.window.bind("<KeyRelease>", self.keyup)
@@ -105,7 +109,9 @@ class CatchGame:
                 ball.change_velocity(0,Constants.FALL_SPEED)
             if randrange(40) < (Constants.FALL_BALL_RATE * 100):
                 if normalize_ball_drop >= 30:
-                    self.fall_balls.append(Ball(self.canvas, randrange(Constants.WIDTH),0,Constants.FALL_BALL_SIZE))
+                    new_ball = Ball(randrange(Constants.WIDTH),0,Constants.FALL_BALL_SIZE)
+                    new_ball.draw_ball(self.canvas)
+                    self.fall_balls.append(new_ball)
                     normalize_ball_drop = 0
             self.window.bind("<KeyPress>", self.keydown)
             self.window.bind("<KeyRelease>", self.keyup)

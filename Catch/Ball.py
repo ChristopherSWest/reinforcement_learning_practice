@@ -1,14 +1,11 @@
 from random import *
+from GameObject import GameObject
 
-class Ball:
-    def __init__(self, canvas, x, y, diameter):
-        self.canvas = canvas
-        self.diameter = diameter
-        self.image = canvas.create_oval(x-(self.diameter/2),y-(self.diameter/2),x+(self.diameter/2),y+(self.diameter/2), fill="white")
-        self.coordinates = self.canvas.coords(self.image)
-        self.center = ((self.coordinates[2]+self.coordinates[0])/2,(self.coordinates[3]+self.coordinates[1])/2)
-        self.xVelocity = 0
-        self.yVelocity = 0
+class Ball(GameObject):
+    def __init__(self, x, y, diameter):
+        super().__init__(x, y, diameter)
+        
+        
     
     def move(self):
         self.coordinates = self.canvas.coords(self.image)
@@ -21,4 +18,10 @@ class Ball:
 
     def delete_ball(self):
         self.canvas.delete(self.image)
+
+    def draw_ball(self, canvas):
+        self.canvas = canvas
+        self.image = canvas.create_oval(self.x-(self.diameter/2),self.y-(self.diameter/2),self.x+(self.diameter/2),self.y+(self.diameter/2), fill="white")
+        self.coordinates = self.canvas.coords(self.image)
+        self.center = ((self.coordinates[2]+self.coordinates[0])/2,(self.coordinates[3]+self.coordinates[1])/2)
         
