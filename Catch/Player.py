@@ -1,7 +1,7 @@
 from random import *
 from GameObject import GameObject
 
-class Ball(GameObject):
+class Player(GameObject):
     def __init__(self, x, y, diameter):
         super().__init__(x, y, diameter)
         

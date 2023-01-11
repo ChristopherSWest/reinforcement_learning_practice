@@ -1,5 +1,6 @@
 from tkinter import *
 from AiPlayer import *
+from Player import *
 from Ball import *
 import time
 from random import *
@@ -14,7 +15,7 @@ class CatchGame:
         self.fall_balls = []
         self.fall_ball = Ball(randrange(Constants.WIDTH),0,Constants.FALL_BALL_SIZE)
         self.fall_ball.draw_ball(self.canvas)
-        self.user_ball = Ball(randrange(Constants.WIDTH), Constants.HEIGHT, Constants.USER_SIZE)
+        self.user_ball = Player(randrange(Constants.WIDTH), Constants.HEIGHT, Constants.USER_SIZE)
         self.user_ball.draw_ball(self.canvas)
         self.ai = AiPlayer(self.user_ball)
         self.fall_balls.append(self.fall_ball)
@@ -51,25 +52,37 @@ class CatchGame:
             state_list = []
             for ball in self.fall_balls:
                 ball.move()
-                state_list.append(int(ball.center[0]))
-                state_list.append(int(ball.center[1]))
-            state_list.append(int(self.ai.ball.center[0]))
-            state_list.append(int(self.ai.ball.center[1]))            
+                state_list.append(int(ball.x))
+                state_list.append(int(ball.y))
+            state_list.append(int(self.ai.ball.x))
+            state_list.append(int(self.ai.ball.y))            
+
+            state = {
+                'falling_objects': [],
+                'player': Player(self.user_ball.x, self.user_ball.y, Constants.USER_SIZE)
+            }
+            # Need to create a state dict that doesn't use tkinter objects.  
+            for ball in self.fall_balls:
+                state["falling_objects"].append(Ball(ball.x,ball.y, Constants.FALL_BALL_SIZE))
+            '''state = {
+                "falling_objects": self.fall_balls,
+                "player": self.user_ball
+            }'''
 
         #ai make move
             actions = self.ai.get_available_moves()
             
-            tuple_state = tuple((int(self.fall_ball.center[0]),int(self.fall_ball.center[1]), int(self.ai.ball.center[0]),int(self.ai.ball.center[1])))
-            action = self.ai.guess_best_move((state_list))
-            
+            tuple_state = tuple((int(self.fall_ball.x),int(self.fall_ball.y), int(self.ai.ball.x),int(self.ai.ball.y)))
+            action = self.ai.guess_best_move(state)
+            #print(state)
             self.ai.make_move(action)
             self.ai.ball.move()
 
 
             for ball in self.fall_balls:
-                if(ball.center[1]>(Constants.HEIGHT)):
+                if(ball.y>(Constants.HEIGHT)):
                         
-                    if (ball.center[0] >= self.ai.ball.coordinates[0] and ball.center[0] <= self.ai.ball.coordinates[2]):
+                    if (ball.x >= self.ai.ball.coordinates[0] and ball.x <= self.ai.ball.coordinates[2]):
 
                         score += 1
                         self.canvas.delete(my_score)
@@ -84,10 +97,10 @@ class CatchGame:
                     ball.delete_ball()
                     remove_ball = self.fall_balls.pop(self.fall_balls.index(ball))
 
-            if(self.ai.ball.center[0]>Constants.WIDTH):
+            if(self.ai.ball.x>Constants.WIDTH):
                 self.ai.ball.canvas.move(self.ai.ball.image, -Constants.WIDTH, self.ai.ball.yVelocity)
 
-            if(self.ai.ball.center[0]<0):
+            if(self.ai.ball.x<0):
                 self.ai.ball.canvas.move(self.ai.ball.image, Constants.WIDTH, self.ai.ball.yVelocity)
 
                         
@@ -118,16 +131,16 @@ class CatchGame:
             state_list = []
             for ball in self.fall_balls:
                 ball.move()
-                state_list.append(int(ball.center[0]))
-                state_list.append(int(ball.center[1]))
-            state_list.append(int(self.user_ball.center[0]))
-            state_list.append(int(self.user_ball.center[1]))
+                state_list.append(int(ball.x))
+                state_list.append(int(ball.y))
+            state_list.append(int(self.user_ball.x))
+            state_list.append(int(self.user_ball.y))
             self.user_ball.move()
             
             for ball in self.fall_balls:
-                if(ball.center[1]>(Constants.HEIGHT)):
+                if(ball.y>(Constants.HEIGHT)):
                     
-                    if (ball.center[0] >= self.user_ball.coordinates[0] and ball.center[0] <= self.user_ball.coordinates[2]):
+                    if (ball.x >= self.user_ball.coordinates[0] and ball.x <= self.user_ball.coordinates[2]):
 
                         score += 1
                         self.canvas.delete(my_score)
@@ -142,10 +155,10 @@ class CatchGame:
                     remove_ball = self.fall_balls.pop(self.fall_balls.index(ball))
                     
 
-            if(self.user_ball.center[0]>Constants.WIDTH):
+            if(self.user_ball.x>Constants.WIDTH):
                 self.user_ball.canvas.move(self.user_ball.image, -Constants.WIDTH, self.user_ball.yVelocity)
 
-            if(self.user_ball.center[0]<0):
+            if(self.user_ball.x<0):
                 self.user_ball.canvas.move(self.user_ball.image, Constants.WIDTH, self.user_ball.yVelocity)
                         
             self.window.update()
