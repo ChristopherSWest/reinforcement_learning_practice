@@ -9,8 +9,8 @@ class Ball(GameObject):
     
     def move(self):
         self.coordinates = self.canvas.coords(self.image)
-        self.x = (self.coordinates[2]+self.coordinates[0])/2
-        self.y = (self.coordinates[3]+self.coordinates[1])/2
+        self.x = (self.coordinates[2]+self.coordinates[0])/2 + self.xVelocity
+        self.y = (self.coordinates[3]+self.coordinates[1])/2 + self.yVelocity
         self.center = ((self.coordinates[2]+self.coordinates[0])/2,(self.coordinates[3]+self.coordinates[1])/2)
         self.canvas.move(self.image,self.xVelocity,self.yVelocity)
     

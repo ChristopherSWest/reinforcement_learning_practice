@@ -39,19 +39,30 @@ class CatchGame:
         # Main Loop
         while True:
             normalize_ball_drop += 1
-            for ball in self.fall_balls:
-                ball.change_velocity(0,Constants.FALL_SPEED)
+            '''for ball in self.fall_balls:
+                if ball.yVelocity == 0:
+                    ball.change_velocity((randrange(-200, 200)/100),Constants.FALL_SPEED)
+                    ball.move()'''
+
             if randrange(40) < (Constants.FALL_BALL_RATE * 100):
                 if normalize_ball_drop >= 30:
-                    new_ball = Ball(randrange(Constants.WIDTH),0,Constants.FALL_BALL_SIZE)
+                    new_ball = Ball(randrange(Constants.WIDTH), 0,Constants.FALL_BALL_SIZE)
                     new_ball.draw_ball(self.canvas)
                     self.fall_balls.append(new_ball)
                     normalize_ball_drop = 0
+                    ball.change_velocity((randrange(-200, 200)/100),Constants.FALL_SPEED)
             self.window.bind("<KeyPress>", self.keydown)
             self.window.bind("<KeyRelease>", self.keyup)
             state_list = []
             for ball in self.fall_balls:
-                ball.move()
+
+                if ball.x <= 0 + Constants.FALL_BALL_SIZE or ball.x >= Constants.WIDTH - Constants.FALL_BALL_SIZE:
+                    
+                    ball.change_velocity((ball.xVelocity * (-1)), ball.yVelocity)
+                    ball.move()
+                else:
+                    ball.change_velocity((randrange(-50,50)/100) + ball.xVelocity, ball.yVelocity)
+                    ball.move()
                 state_list.append(int(ball.x))
                 state_list.append(int(ball.y))
             state_list.append(int(self.ai.ball.x))
@@ -74,11 +85,16 @@ class CatchGame:
             
             tuple_state = tuple((int(self.fall_ball.x),int(self.fall_ball.y), int(self.ai.ball.x),int(self.ai.ball.y)))
             action = self.ai.guess_best_move(state)
-            #print(state)
+            #print(action)
+            last = {
+                "state": state,
+                "action": action
+            }
+
             self.ai.make_move(action)
             self.ai.ball.move()
 
-
+            
             for ball in self.fall_balls:
                 if(ball.y>(Constants.HEIGHT)):
                         
@@ -87,12 +103,23 @@ class CatchGame:
                         score += 1
                         self.canvas.delete(my_score)
                         my_score = self.canvas.create_text(Constants.WIDTH*0.80, 25, text=score, fill="red", font=('Helvetica 15 bold'))
+                        self.ai.update_model(
+                            last["state"],
+                            last["action"],
+                            state,
+                            1
+                        )
 
                     else:
                         score -= 1
                         self.canvas.delete(my_score)
                         my_score = self.canvas.create_text(Constants.WIDTH*0.80, 25, text=score, fill="red", font=('Helvetica 15 bold'))
-
+                        self.ai.update_model(
+                            last["state"],
+                            last["action"],
+                            state,
+                            -1
+                        )
 
                     ball.delete_ball()
                     remove_ball = self.fall_balls.pop(self.fall_balls.index(ball))
