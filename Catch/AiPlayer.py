@@ -73,18 +73,13 @@ class AiPlayer:
         for move in available_moves:
             try:
                 estimated_values.update({move: self.reg.predict([self.create_feature_vector(state, move)])})
-                #print(state)
             except Exception as e:
-                #print('failed to estimate')
                 print(e)
-                #print(state)
                 estimated_values.update({move: 0})
             
         best_moves = [key for key, value in estimated_values.items() if value == max(estimated_values.values())]
-        '''for v in estimated_values:
-            print(f'{v}: {estimated_values[v]}')'''
         
-        #print(estimated_values.values())
+  
         if random_number <= self.epsilon * 100:
             return sample(available_moves,1)[0]
         else:
@@ -111,21 +106,6 @@ class AiPlayer:
         # assuming that the particular action was taken. feature value = f(S,A)
 
 
-        '''fall_balls_amount = len(state["falling_objects"])#(len(state)-2)/2
-        user_ball_tuple = (state["player"].x,state["player"].y) #(state[len(state)-2], state[len(state)-1])
-        fall_states = []
-        states_to_check = []'''
-        
-        '''for i in range(int(fall_balls_amount*2)):
-            if i != 0 and i % 2 != 0:
-                fall_states.append(state[i])
-                fall_states.append(user_ball_tuple[0])
-                fall_states.append(user_ball_tuple[1])
-                states_to_check.append((fall_states[0],fall_states[1],fall_states[2],fall_states[3]))
-                fall_states = []
-            else:
-                fall_states.append(state[i])'''
-
         try:
             distances = {}
             for s in state["falling_objects"]:
@@ -151,11 +131,10 @@ class AiPlayer:
                 avg_distance = self.get_distance(avg_ball, state['player'])
 
                 closest_object = [key for key, value in distances.items() if value == min(distances.values())]
-                #print(closest_object[0])
+                
                 distance = self.get_distance(closest_object[0],state['player'])
                 object_copy = deepcopy(closest_object[0])
-                #print(f"closest Object: ({closest_object[0].x}, {closest_object[0].y})")
-                #print(f"orignial_player: ({state['player'].x}, {state['player'].y})")
+                
                 object_copy.change_velocity(0, Constants.FALL_SPEED)
                 object_copy.x = object_copy.x + object_copy.xVelocity
                 object_copy.y = object_copy.y + object_copy.yVelocity
@@ -163,27 +142,14 @@ class AiPlayer:
                 new_player_position.change_velocity(action[0],action[1])
                 new_player_position.x = new_player_position.x + new_player_position.xVelocity
                 new_player_position.y = new_player_position.y + new_player_position.yVelocity
-                #(closest_state[0][0],closest_state[0][1]+Constants.FALL_SPEED,closest_state[0][2]+action[0],closest_state[0][3])
+                
                 new_distance = self.get_distance(object_copy,new_player_position)
                 state_feature = distance - new_distance
                 
-                #print(f"State_Feature: {state_feature}")
-                #print("")
             except Exception as e:
                 print(e)
             feature_vector = [state_feature, x_avg - (state["player"].x), y_avg - (state["player"].y), avg_distance,state['player'].x, state['player'].y, object_copy.xVelocity - (state["player"].xVelocity), object_copy.yVelocity - (state["player"].yVelocity), 1]
             
-            '''if action == (-Constants.USER_SPEED,0):
-                feature_vector = [state_feature, x_avg - (state["player"].x), y_avg - (state["player"].y), avg_distance,state['player'].x, state['player'].y, object_copy.xVelocity - (state["player"].xVelocity), object_copy.yVelocity - (state["player"].yVelocity), 1]
-            elif action == (0,0):
-                feature_vector = [state_feature, x_avg - (state["player"].x), y_avg - (state["player"].y), avg_distance, state['player'].x, state['player'].y, object_copy.xVelocity - (state["player"].xVelocity),  object_copy.yVelocity - (state["player"].yVelocity), 1]
-            elif action == (Constants.USER_SPEED, 0):
-                feature_vector = [state_feature, x_avg - (state["player"].x), y_avg - (state["player"].y), avg_distance, state['player'].x, state['player'].y, object_copy.xVelocity - (state["player"].xVelocity),  object_copy.yVelocity - (state["player"].yVelocity), 1]
-            elif action == (-Constants.USER_HIGH_SPEED,0):
-                feature_vector = [state_feature, x_avg - (state["player"].x), y_avg - (state["player"].y), avg_distance, state['player'].x, state['player'].y, object_copy.xVelocity - (state["player"].xVelocity),  object_copy.yVelocity - (state["player"].yVelocity), 1]
-            
-            elif action == (Constants.USER_HIGH_SPEED,0):
-                feature_vector = [state_feature, x_avg - (state["player"].x), y_avg - (state["player"].y), avg_distance, state['player'].x, state['player'].y, object_copy.xVelocity - (state["player"].xVelocity),  object_copy.yVelocity - (state["player"].yVelocity), 1]'''
         finally:
             return feature_vector
 
@@ -207,11 +173,10 @@ class AiPlayer:
             distances.append(math.sqrt((distance_vector[0] * distance_vector[0]) + (distance_vector[1] * distance_vector[1])))
 
         distance = min(distances)
-        #print(f"Distance: {distance}")
         return distance
 
     def train(self, n):
-        buff = 100
+        buff = 10
         catch_count = 0
         count = 0
         #Play game n times
@@ -222,14 +187,9 @@ class AiPlayer:
         fall_ball.change_velocity((randrange(-100,100)/100), Constants.FALL_SPEED)
         fall_balls.append(fall_ball)
         
-        '''f1 = fall_ball[0]
-        f2 = fall_ball[1]
-        u1 = randrange(Constants.WIDTH)
-        u2 = Constants.HEIGHT'''
+        
 
 
-        #state = (f1, f2, u1, u2)
-        #state = [fall_ball,Player(randrange(Constants.WIDTH), Constants.HEIGHT, Constants.USER_SIZE)]
         state = {
             "falling_objects":[fall_ball],
             "player":Player(randrange(Constants.WIDTH), Constants.HEIGHT, Constants.USER_SIZE) 
@@ -269,7 +229,6 @@ class AiPlayer:
             normalize_ball_drop += 1
             if randrange(40) < (Constants.FALL_BALL_RATE * 100):
                 if normalize_ball_drop >= 5:
-                    #state_list.append(Ball(randrange(Constants.WIDTH),0,Constants.FALL_BALL_SIZE))
                     state["falling_objects"].append(Ball(randrange(Constants.WIDTH),0,Constants.FALL_BALL_SIZE))
                     
                     normalize_ball_drop = 0
@@ -303,7 +262,6 @@ class AiPlayer:
                 state["player"].x = (Constants.WIDTH - Constants.WIDTH) + Constants.WIDTH
             
             for idx, b in enumerate(state["falling_objects"]):
-                #print(f"Ball {idx}: ({b.x},{b.y})")
                 
             # if ball completes fall, get the proper reward
             
@@ -313,7 +271,6 @@ class AiPlayer:
 
                     #if player catches the ball
                     if ((b.x >= (state["player"].x - (Constants.USER_SIZE/1.5))) and (b.x <= (state["player"].x + (Constants.USER_SIZE/1.5)))):
-                        catch_count += 1
                         if n < buff:
                             last_copy = deepcopy(last)
                             last_copy.update({"value": 1})
@@ -328,8 +285,6 @@ class AiPlayer:
                         catch_count+=1
                         
                         print("catch")
-                        #print(f"Ball: ({b.x},{b.y})")
-                        #print(f"Player: ({state['player'].x}, {state['player'].y})")
                         state["falling_objects"].pop(idx)
                         
 
@@ -364,12 +319,7 @@ class AiPlayer:
                             array_x = self.create_feature_vector(q["state"],q["action"])
                             array_y.append[q["value"]]
                             
-                            '''self.update_model(
-                                q["state"],
-                                q["action"],
-                                state,
-                                q["value"]
-                            )'''
+                            
 
                         X = np.array(array_x)
                         #X = X.reshape(1, -1)
@@ -385,4 +335,5 @@ class AiPlayer:
 
 
             if count >= n:
+                print(f"Catch percentage:  %{catch_count/count}")
                 break
