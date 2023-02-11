@@ -9,12 +9,13 @@ import math
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import SGDRegressor
 from copy import deepcopy
+import joblib
 
 
 
 class ChessAI():
 
-    def __init__(self, alpha=0.99, epsilon=0.9):
+    def __init__(self, alpha=0.99, epsilon=0.1):
         """
         Initialize AI with an empty Q-learning dictionary,
         an alpha (learning) rate, and an epsilon rate.
@@ -35,7 +36,7 @@ class ChessAI():
         Converts the fen chessboard format to a 8x8 array that represents the state 
         of the game board
         """
-        state_dict = {
+        '''state_dict = {
             "r": -5,
             "n": -3,
             "b": -3,
@@ -48,9 +49,24 @@ class ChessAI():
             "Q": 9,
             "K": 10,
             "P": 1,
+        }'''
+        state_dict = {
+            "r": -1,
+            "n": -1,
+            "b": -1,
+            "q": -1,
+            "k": -1,
+            "p": -1,
+            "R": 1,
+            "N": 1,
+            "B": 1,
+            "Q": 1,
+            "K": 1,
+            "P": 1,
         }
         
-            
+        
+
         rows = board.board_fen().split('/')
         
         state = []
@@ -67,6 +83,12 @@ class ChessAI():
         array.reshape(8,8)
         return state
     
+    def save_model(self):
+        joblib.dump(self.reg, "model1.pkl")
+
+    def load_model(self):
+        self.reg = joblib.load("model1.pkl")
+
     def get_action(self, action):
         action_dict = {
             "a": 0,
@@ -200,17 +222,14 @@ class ChessAI():
         p_type_avg = 0
         #feature_vector.append(state.legal_moves.count())
         
-        b_ave, b_total, b_count, w_ave, w_total, w_count = self.get_piece_ave(state)
+        '''b_ave, b_total, b_count, w_ave, w_total, w_count = self.get_piece_ave(state)
         
-        
-        
-
         feature_vector.append(b_ave  * -1)
         feature_vector.append(b_total * -1)
         feature_vector.append(b_count)
         feature_vector.append(w_ave)
         feature_vector.append(w_total)
-        feature_vector.append(w_count)
+        feature_vector.append(w_count)'''
 
         b_ave, b_total, b_count, w_ave, w_total, w_count = self.get_piece_ave(copy_state)
 
@@ -220,6 +239,25 @@ class ChessAI():
         feature_vector.append(w_ave)
         feature_vector.append(w_total)
         feature_vector.append(w_count)
+        
+        
+
+        '''feature_vector.append((b_ave  * -1)/64)
+        feature_vector.append((b_total * -1)/64)
+        feature_vector.append((b_count)/64)
+        feature_vector.append((w_ave)/64)
+        feature_vector.append((w_total)/64)
+        feature_vector.append((w_count)/64)
+
+        b_ave, b_total, b_count, w_ave, w_total, w_count = self.get_piece_ave(copy_state)
+
+        feature_vector.append((b_ave  * -1)/64)
+        feature_vector.append((b_total  * -1)/64)
+        feature_vector.append((b_count)/64)
+        feature_vector.append((w_ave)/64)
+        feature_vector.append((w_total)/64)
+        feature_vector.append((w_count)/64)'''
+        #print(feature_vector)
 
         '''try:
             feature_vector.append(len(state.attacks(move.from_square)))
@@ -401,6 +439,11 @@ def train(n):
     """
     
     player = ChessAI()
+    '''if n == 0:
+        player.epsilon = 0.05
+        player.load_model()
+        return player'''
+
     checkmate_count = 0
     count = 0
     # Play n games
@@ -478,7 +521,16 @@ def train(n):
                     2
                 )
                 break
-            elif game.is_game_over() == True and game.is_checkmate() == False:
+            '''else:
+                player.update_model(last[game.turn]["state"], last[game.turn]["action"], copy_game, 0)
+                player.update_model(
+                    game_copy,
+                    action,
+                    game,
+                    0
+                )
+                break'''
+            '''elif game.is_game_over() == True and game.is_checkmate() == False:
                 player.update_model(last[game.turn]["state"], last[game.turn]["action"], copy_game, -1)
                 player.update_model(
                     game_copy,
@@ -486,7 +538,7 @@ def train(n):
                     game,
                     1
                 )
-                break
+                break'''
             
             '''elif game.is_check() == True:
                 player.update_model(last[game.turn]["state"], last[game.turn]["action"], copy_game, -1)
@@ -524,6 +576,7 @@ def train(n):
     print("Done training")
 
     # Return the trained AI
+    player.save_model()
     return player
 
 def play(ai, human_player=None):
@@ -532,11 +585,11 @@ def play(ai, human_player=None):
     `human_player` can be set to 0 or 1 to specify whether
     human player moves first or second.
     """
-
+    
     # If no player order set, choose human's order randomly
     if human_player is None:
-        human_player = randint(0, 1)
-
+        #human_player = randint(0, 1)
+        human_player = (0)
     # Create new game
     board = chess.Board()
 
@@ -554,25 +607,28 @@ def play(ai, human_player=None):
         moves = list(board.legal_moves)
         
         #time.sleep(1)
-        if board.turn == True:
+        if board.turn == chess.WHITE:
             print("White's turn")
             if bool(board.legal_moves):
-                move = chess.Move.from_uci(str(ai.guess_best_move(board)))
+                #move = chess.Move.from_uci(str(ai.guess_best_move(board)))
+                board.push(ai.guess_best_move(board))
                 print(board.turn)
             else: print(moves)
         else:
             print("Black's turn")
             if bool(board.legal_moves):
-                move = chess.Move.from_uci(str(ai.choose_action(board)))
+
+                #move = chess.Move.from_uci(str(ai.choose_action(board)))
+                board.push(ai.choose_action(board))
         
         
         
-        board.push(move)
+        
         print(board)
-        if board.turn == False:
-            print(f"White's move: {move.uci()}")
+        '''if board.turn == chess.BLACK:
+            print(f"White's move: {board.move}")
         else:
-            print(f"Black's move: {move.uci()}")
+            print(f"Black's move: {move.uci()}")'''
         print("")
         print("")
 
