@@ -439,10 +439,10 @@ def train(n):
     """
     
     player = ChessAI()
-    '''if n == 0:
+    if n == 0:
         player.epsilon = 0.05
         player.load_model()
-        return player'''
+        return player
 
     checkmate_count = 0
     count = 0
@@ -513,24 +513,6 @@ def train(n):
                 checkmate_count += 1   
                 print(f"Checkmate ratio: {(checkmate_count/count*100)}")
                 
-                player.update_model(last[game.turn]["state"], last[game.turn]["action"], copy_game, -2)
-                player.update_model(
-                    game_copy,
-                    action,
-                    game,
-                    2
-                )
-                break
-            '''else:
-                player.update_model(last[game.turn]["state"], last[game.turn]["action"], copy_game, 0)
-                player.update_model(
-                    game_copy,
-                    action,
-                    game,
-                    0
-                )
-                break'''
-            '''elif game.is_game_over() == True and game.is_checkmate() == False:
                 player.update_model(last[game.turn]["state"], last[game.turn]["action"], copy_game, -1)
                 player.update_model(
                     game_copy,
@@ -538,7 +520,16 @@ def train(n):
                     game,
                     1
                 )
-                break'''
+                break
+            elif game.is_game_over() == True and game.is_checkmate() == False:
+                player.update_model(last[game.turn]["state"], last[game.turn]["action"], copy_game, 0)
+                player.update_model(
+                    game_copy,
+                    action,
+                    game,
+                    0
+                )
+                break
             
             '''elif game.is_check() == True:
                 player.update_model(last[game.turn]["state"], last[game.turn]["action"], copy_game, -1)
@@ -565,13 +556,13 @@ def train(n):
                     print(e)'''
                 
             # If game is continuing, no rewards yet
-            '''if game.is_game_over() == False:
+            if game.is_game_over() == False:
                 player.update_model(
                     copy_game,
                     action,
                     game,
                     0
-                )'''
+                )
 
     print("Done training")
 

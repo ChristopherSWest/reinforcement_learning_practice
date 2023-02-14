@@ -53,6 +53,6 @@ num_actions = 0
 
 
 
-ai = train(500)
+ai = train(15)
 play(ai)
 
