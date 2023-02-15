@@ -15,7 +15,7 @@ import joblib
 
 class ChessAI():
 
-    def __init__(self, alpha=0.99, epsilon=0.1):
+    def __init__(self, alpha=0.1, epsilon=1):
         """
         Initialize AI with an empty Q-learning dictionary,
         an alpha (learning) rate, and an epsilon rate.
@@ -29,7 +29,7 @@ class ChessAI():
         self.alpha = alpha
         self.epsilon = epsilon
         self.reg = SGDRegressor()
-        self.discount = 0.6
+        self.discount = 1
 
     def get_state(self, board):
         """
@@ -37,32 +37,32 @@ class ChessAI():
         of the game board
         """
         '''state_dict = {
-            "r": -5,
-            "n": -3,
-            "b": -3,
-            "q": -9,
-            "k": -10,
-            "p": -1,
-            "R": 5,
-            "N": 3,
-            "B": 3,
-            "Q": 9,
-            "K": 10,
-            "P": 1,
-        }'''
-        state_dict = {
-            "r": -1,
-            "n": -1,
-            "b": -1,
-            "q": -1,
-            "k": -1,
-            "p": -1,
+            "r": 1,
+            "n": 1,
+            "b": 1,
+            "q": 1,
+            "k": 1,
+            "p": 1,
             "R": 1,
             "N": 1,
             "B": 1,
             "Q": 1,
             "K": 1,
             "P": 1,
+        }'''
+        state_dict = {
+            "r": -0.5,
+            "n": -0.3,
+            "b": -0.3,
+            "q": -0.9,
+            "k": -1,
+            "p": -0.1,
+            "R": 0.5,
+            "N": 0.3,
+            "B": 0.3,
+            "Q": 0.9,
+            "K": 1,
+            "P": 0.1,
         }
         
         
@@ -84,10 +84,10 @@ class ChessAI():
         return state
     
     def save_model(self):
-        joblib.dump(self.reg, "model1.pkl")
+        joblib.dump(self.reg, "modelNewBestReward1.pkl")
 
     def load_model(self):
-        self.reg = joblib.load("model1.pkl")
+        self.reg = joblib.load("modelPotench5.pkl")
 
     def get_action(self, action):
         action_dict = {
@@ -140,8 +140,8 @@ class ChessAI():
 
     def update_q_model(self, state, action, old_q, reward, future_reward):
         # get a new value estimate using the regression model
-        
-        qval = old_q + self.alpha * (reward + self.discount * future_reward - old_q)
+        self.alpha = 1 - (1/len(list(state.legal_moves)))
+        qval = old_q + self.alpha * (reward + (self.discount *future_reward) - old_q)
         array_x = self.create_feature_vector(state,action)
         array_y = [qval]
         
@@ -168,20 +168,37 @@ class ChessAI():
         Q-value in `self.q`. If there are no available actions in
         `state`, return 0.
         """
+        #gonna assume the next player makes the best move
+        best_new_turn = deepcopy(state)
         
-        available_actions = list(state.legal_moves)
-        if len(available_actions) == 0:
+        if bool(state.legal_moves) == False:
             return 0
         else:
-            q_list = []
-            rewards = [] 
-            for move in available_actions:
-                try:
-                    rewards.append(self.reg.predict([self.create_feature_vector(state, move)]))
-                except:
-                    rewards.append(0)
-            
-            best_reward = max(rewards)
+            best_new_turn.push(self.guess_best_move(best_new_turn,custom_epsilon=0))
+            available_actions = list(best_new_turn.legal_moves)
+            if bool(best_new_turn.legal_moves) == False:
+                if best_new_turn.is_checkmate() == True:
+                    return -1
+                else:
+                    return 0
+            else:
+
+                q_list = []
+                rewards = [] 
+                for move in available_actions:
+                    copy_state = deepcopy(best_new_turn)
+                    copy_state.push(move)
+                    if copy_state.is_checkmate() == True:
+                        rewards.append(1)
+                    elif copy_state.is_game_over() == True:
+                        rewards.append(0)
+                    else:
+                        try:
+                            rewards.append(self.reg.predict([self.create_feature_vector(state, move)]))
+                        except:
+                            rewards.append(0)
+                
+                best_reward = max(rewards)
             return best_reward
         #raise NotImplementedError
 
@@ -205,150 +222,72 @@ class ChessAI():
         return b_ave, b_total, b_count, w_ave, w_total, w_count
 
     def create_feature_vector(self, state, move):
-        #feature_vector = self.get_state(state)
+        feature_vector = [1]#self.get_state(state)
+        
         #print(move.to_square)
         copy_state = deepcopy(state)
+        #feature_vector = self.get_state(copy_state)
+
+        #print(state)
         try:
             copy_state.push(move)
         except:
             copy_state.pop()
             copy_state.push(move)
 
-            print(copy_state)
-            print(move)
-        feature_vector = []
-        attacks_p_types = []
-        p_type_total = 0
-        p_type_avg = 0
-        #feature_vector.append(state.legal_moves.count())
+        state_vector = []
+        copy_vector = []
+        state_vector = self.get_state(state)
+        copy_vector = self.get_state(copy_state)
         
-        '''b_ave, b_total, b_count, w_ave, w_total, w_count = self.get_piece_ave(state)
+        for i, value in enumerate(state_vector):
+            if value < 0 and copy_vector[i] >= 0:
+                feature_vector.append(value * -1)
+                feature_vector.append(copy_vector[i] - (value * -1))
+
+            elif value < 0 and copy_vector[i] < 0:
+                feature_vector.append(value * -1)
+                feature_vector.append((copy_vector[i] * -1) - (value * -1))
+
+            elif value >= 0 and copy_vector[i] < 0:
+                feature_vector.append(value)
+                feature_vector.append((copy_vector[i] * -1) - (value))
+
+            elif value >= 0 and copy_vector[i] >= 0:
+                feature_vector.append(value)
+                feature_vector.append(copy_vector[i]-value)
+
+        b_ave, b_total, b_count, w_ave, w_total, w_count = self.get_piece_ave(state)
+        copy_b_ave, copy_b_total, copy_b_count, copy_w_ave, copy_w_total, copy_w_count = self.get_piece_ave(copy_state)
+
+        feature_vector.append(w_count/64)
+        feature_vector.append(copy_w_count/64)
         
-        feature_vector.append(b_ave  * -1)
-        feature_vector.append(b_total * -1)
-        feature_vector.append(b_count)
+        feature_vector.append(b_count/64)
+        feature_vector.append(copy_b_count/64)
+
         feature_vector.append(w_ave)
-        feature_vector.append(w_total)
-        feature_vector.append(w_count)'''
-
-        b_ave, b_total, b_count, w_ave, w_total, w_count = self.get_piece_ave(copy_state)
-
-        feature_vector.append(b_ave  * -1)
-        feature_vector.append(b_total  * -1)
-        feature_vector.append(b_count)
-        feature_vector.append(w_ave)
-        feature_vector.append(w_total)
-        feature_vector.append(w_count)
+        feature_vector.append(copy_w_ave)
+        feature_vector.append(b_ave)
+        feature_vector.append(copy_b_ave)
+        #feature_vector.append(1-(1/state.legal_moves.count()))
+        #feature_vector.append(1-(1/copy_state.legal_moves.count()))
         
-        
-
-        '''feature_vector.append((b_ave  * -1)/64)
-        feature_vector.append((b_total * -1)/64)
-        feature_vector.append((b_count)/64)
-        feature_vector.append((w_ave)/64)
-        feature_vector.append((w_total)/64)
-        feature_vector.append((w_count)/64)
-
-        b_ave, b_total, b_count, w_ave, w_total, w_count = self.get_piece_ave(copy_state)
-
-        feature_vector.append((b_ave  * -1)/64)
-        feature_vector.append((b_total  * -1)/64)
-        feature_vector.append((b_count)/64)
-        feature_vector.append((w_ave)/64)
-        feature_vector.append((w_total)/64)
-        feature_vector.append((w_count)/64)'''
-        #print(feature_vector)
-
-        '''try:
-            feature_vector.append(len(state.attacks(move.from_square)))
-            #print(len(state.attacks(move.to_square)))
-        except Exception as e:
-            print(e)
-            print(state)
-            print(move)
-            
-            feature_vector.append(0)
-
-            
-        try: 
-            for square in state.attacks(move.from_square):
-                #print(type(square))
-                if state.piece_type_at(square) is not None:
-                    #print(state.piece_type_at(square))
-                    
-                    attacks_p_types.append(int(state.piece_type_at(square)))
-                    p_type_total += int(state.piece_type_at(square))
-                
-                
-
-            if len(attacks_p_types) != 0:
-                p_type_avg = p_type_total / len(attacks_p_types)
-            else:
-                p_type_avg = 0
-
-            feature_vector.append(p_type_total)
-
-            feature_vector.append(p_type_avg)
-        except:
-            
-            feature_vector.append(0)
-            feature_vector.append(0)
-        #print(move)
-        if state.is_capture(move):
-            #print(move.from_square)
-            #print(state.piece_type_at(move.to_square))
-            if state.piece_type_at(move.to_square) is not None:
-                try:
-                    feature_vector.append(state.piece_type_at(move.to_square) - state.piece_type_at(move.from_square))
-                except Exception as e:
-                    print(f"to: {e}")
-                    print(state)
-                    print(move)
-                    #print(move.uci())
-                    feature_vector.append(0)
-            elif state.is_en_passant(move):
-                feature_vector.append(state.piece_type_at(move.from_square))
-            if state.piece_type_at(move.from_square) is not None:
-                
-                try:
-                    feature_vector.append(state.piece_type_at(move.from_square))
-                except Exception as e:
-                    print(f"from: {e}")
-                    #print(move.uci())
-                    feature_vector.append(0)
-            else:
-                
-                feature_vector.append(0)
-                feature_vector.append(0)
-                
-
-        elif move.to_square == 44 or move.to_square == 45 or move.to_square == 54 or move.to_square == 45: 
-            feature_vector.append(1)
-            feature_vector.append(1)
-        else: 
-            print(state)
-            print(move)
-            feature_vector.append(0)
-            feature_vector.append(0)'''
-            
-        '''for item in action:
-            feature_vector.append(item)'''
         #print(feature_vector)
         #print(self.get_action(str(move)))
-        feature_vector.append(1)
+        #feature_vector.append(1)
         #print(feature_vector)
         return feature_vector
 
 
 
-    def guess_best_move(self, state):
+    def guess_best_move(self, state, custom_epsilon=None):
         # Guess the best move to take based on the prediciting the value of the state/action pair.
         # Will select a random move with the probability of epsilon
         random_number = randrange(100)
         estimated_values = {}
         best_moves = []
         available_moves = list(state.legal_moves)
-        
         for move in available_moves:
             try:
                 estimated_values.update({move: self.reg.predict([self.create_feature_vector(state, move)])})
@@ -359,11 +298,11 @@ class ChessAI():
         best_moves = [key for key, value in estimated_values.items() if value == max(estimated_values.values())]
         
         #print(estimated_values)
-        if random_number <= self.epsilon * 100:
+        if random_number <= self.epsilon * 100 and custom_epsilon != 0:
             return sample(available_moves,1)[0]
         else:
             if len(best_moves) > 1:
-                best = best_moves[randrange(len(best_moves))]
+                best = sample(best_moves,1)[0]#best_moves[randrange(len(best_moves))]
                 '''print(state)
                 print(best)'''
                 
@@ -391,35 +330,8 @@ class ChessAI():
         """
         
         moves = list(board.legal_moves)
-        #print(moves)
-        rand = randrange(0, len(moves))
-        heighest_value = 0
-        rand_prob = randrange(100)
-        action_values = []
-        actions = []
-        actions_set = set(moves)
-        choose_action = []
-        #print(actions_set)
-        #print(self.epsilon)
-        for action in moves:
-                
-            actions.append(action)
-            act = self.get_action(action.uci())
-                
-            action_values.append(0)
-            
-        if rand_prob <= (self.epsilon * 100):
-           action = choice(actions)
-                
-        else:
-            heighest_value = max(action_values)
-            for i in range(len(actions)):
-                if heighest_value == action_values[i]:
-                    #action = actions[i]
-                    #print(f"action value: {action_values[i]}")
-                    choose_action.append(actions[i])
-            action = choice(choose_action)
-
+        
+        action = sample(moves,1)[0]
 
             
 
@@ -443,11 +355,14 @@ def train(n):
         player.epsilon = 0.05
         player.load_model()
         return player
-
+    
     checkmate_count = 0
     count = 0
     # Play n games
     for i in range(n):
+
+        if player.discount < 0.95:
+            player.discount += 1/n
         count += 1
         print(f"Playing training game {i + 1}")
         piece_value = {
@@ -469,13 +384,14 @@ def train(n):
             False: {"state": None, "action": None},
             True: {"state": None, "action": None}
         }
-        
+        if player.epsilon > 0.09:
+                player.epsilon -= (1/(n))
         # Game loop
         while game.is_game_over() == False:
             #print(player.epsilon)
             
-            if player.epsilon > 0.05:
-                player.epsilon -= (1/(n*100))
+            
+            
             #player.alpha = 1 - (checkmate_count/count)    
             # Keep track of current state and action
             state = game.board_fen()
@@ -514,12 +430,20 @@ def train(n):
                 print(f"Checkmate ratio: {(checkmate_count/count*100)}")
                 
                 player.update_model(last[game.turn]["state"], last[game.turn]["action"], copy_game, -1)
+                #if game.turn == False:
                 player.update_model(
                     game_copy,
                     action,
                     game,
                     1
                 )
+                '''elif game.turn == True:
+                    player.update_model(
+                        game_copy,
+                        action,
+                        game,
+                        -1
+                    )'''
                 break
             elif game.is_game_over() == True and game.is_checkmate() == False:
                 player.update_model(last[game.turn]["state"], last[game.turn]["action"], copy_game, 0)
@@ -531,32 +455,10 @@ def train(n):
                 )
                 break
             
-            '''elif game.is_check() == True:
-                player.update_model(last[game.turn]["state"], last[game.turn]["action"], copy_game, -1)
-                player.update_model(
-                    copy_game, 
-                    action,
-                    new_state,
-                    1
-                )'''
-            
-            
-            '''elif game.is_capture(action) == True and game.is_en_passant(action) ==  False:    
-                try:
-                    #print(f"{chess.piece_name(copy_game.piece_type_at(action.from_square))} Takes {chess.piece_name(copy_game.piece_type_at(action.to_square))}")
-                    player.update_model(last[game.turn]["state"],  action.uci(), copy_game, -1*(piece_value[copy_game.piece_type_at(action.to_square)]))
-                    player.update_model(
-                        copy_game, 
-                        last[game.turn]["action"].uci(),
-                        new_state,
-                        copy_game.piece_type_at(action.to_square)
-                    )
-                except Exception as e:
-                    #TODO figure out proper way to handle this error
-                    print(e)'''
                 
             # If game is continuing, no rewards yet
-            if game.is_game_over() == False:
+            elif game.is_game_over() == False:
+                player.update_model(last[game.turn]["state"], last[game.turn]["action"], copy_game, 0)
                 player.update_model(
                     copy_game,
                     action,
@@ -580,7 +482,9 @@ def play(ai, human_player=None):
     # If no player order set, choose human's order randomly
     if human_player is None:
         #human_player = randint(0, 1)
-        human_player = (0)
+        human_player = False
+    else:
+        human_player = True
     # Create new game
     board = chess.Board()
 
@@ -603,23 +507,37 @@ def play(ai, human_player=None):
             if bool(board.legal_moves):
                 #move = chess.Move.from_uci(str(ai.guess_best_move(board)))
                 board.push(ai.guess_best_move(board))
-                print(board.turn)
+                
             else: print(moves)
         else:
             print("Black's turn")
             if bool(board.legal_moves):
 
                 #move = chess.Move.from_uci(str(ai.choose_action(board)))
-                board.push(ai.choose_action(board))
-        
-        
-        
+                if human_player == False:
+                    board.push(ai.choose_action(board))
+                    #board.push(ai.guess_best_move(board))
+
+                human_move = ""
+                while board.turn == chess.BLACK and human_player == True:
+                    try:
+                        human_move = input()
+                        hmove = chess.Move.from_uci(human_move)
+                        if hmove in moves:
+                            board.push(hmove)
+                        else:
+                            raise Exception("illegal move")
+                    except Exception as e:
+                        print("not a move, dumb dumb")      
+                        print(e)
+                if human_move == "exit":
+                    break
         
         print(board)
-        '''if board.turn == chess.BLACK:
-            print(f"White's move: {board.move}")
+        if board.turn == chess.BLACK:
+            print(f"White's move: {board.peek()}")
         else:
-            print(f"Black's move: {move.uci()}")'''
+            print(f"Black's move: {board.peek()}")
         print("")
         print("")
 
