@@ -1,5 +1,6 @@
 from random import random
 from collections import deque
+from this import d
 import numpy as np
 import chess
 import chess.svg
@@ -29,6 +30,8 @@ class ChessAI():
         self.alpha = alpha
         self.epsilon = epsilon
         self.reg = SGDRegressor()
+        self.reg2 = SGDRegressor()
+        self.flip = 0
         self.discount = 1
 
     def get_state(self, board):
@@ -64,6 +67,20 @@ class ChessAI():
             "K": 1,
             "P": 0.1,
         }
+        '''state_dict = {
+            "r": 0.5,
+            "n": 0.3,
+            "b": 0.3,
+            "q": 0.9,
+            "k": 1,
+            "p": 0.1,
+            "R": 0.5,
+            "N": 0.3,
+            "B": 0.3,
+            "Q": 0.9,
+            "K": 1,
+            "P": 0.1,
+        }'''
         
         
 
@@ -84,10 +101,12 @@ class ChessAI():
         return state
     
     def save_model(self):
-        joblib.dump(self.reg, "3Step50EpochX250point1.pkl")
+        joblib.dump(self.reg, "dubQ1.pkl")
+        joblib.dump(self.reg2, "dubQ2.pkl")
 
     def load_model(self):
-        self.reg = joblib.load("3Step10EpochX50point1.pkl")
+        self.reg = joblib.load("dubQ1.pkl")
+        self.reg2 = joblib.load("dubQ2.pkl")
 
     def get_action(self, action):
         action_dict = {
@@ -126,8 +145,12 @@ class ChessAI():
    
     def update_model(self, old_state, action, new_state, reward):
         #Try to predict the value of old q.  If the model isn't initialized yet, set old to 0
+        
         try:
-            old = self.reg.predict([self.create_feature_vector(old_state, action)])
+            if self.flip == 0:
+                old = self.reg.predict([self.create_feature_vector(old_state, action)])
+            else:
+                old = self.reg2.predict([self.create_feature_vector(old_state, action)])
         except:
             old = 0
         best_future = self.best_future_reward(new_state)
@@ -140,7 +163,7 @@ class ChessAI():
 
     def update_q_model(self, state, action, old_q, reward, future_reward):
         # get a new value estimate using the regression model
-        self.alpha = 1 - (1/len(list(state.legal_moves)))
+        #self.alpha = 1 - (1/len(list(state.legal_moves)))
         qval = old_q + self.alpha * (reward + (self.discount *future_reward) - old_q)
         array_x = self.create_feature_vector(state,action)
         array_y = [qval]
@@ -152,10 +175,16 @@ class ChessAI():
         
         
         # Try a partial fit.  if the model hasn't been fitted yet, use the fit method instead
-        try:
-            self.reg.partial_fit(X,Y.ravel())
-        except:
-            self.reg.fit(X,Y.ravel())
+        if self.flip == 0:
+            try:
+                self.reg.partial_fit(X,Y.ravel())
+            except:
+                self.reg.fit(X,Y.ravel())
+        else:
+            try:
+                self.reg2.partial_fit(X,Y.ravel())
+            except:
+                self.reg2.fit(X,Y.ravel())
 
 
     def best_future_reward(self, state):
@@ -170,43 +199,97 @@ class ChessAI():
         """
         #gonna assume the next player makes the best move else return 0
         #check if terminal state if it is return 0 else opponent makes move
+        
+        r = 0
+
+        #flip  a coin 
+        self.flip = randrange(2)
+
         best_new_turn = deepcopy(state)
         
-        if bool(state.legal_moves) == False:
+        if bool(best_new_turn.legal_moves) == False:
             return 0
         else:
             #oposite player makes best move based on policy
             copy_state = deepcopy(best_new_turn)
-            best_new_turn.push(self.guess_best_move(best_new_turn, custom_epsilon=0))
+            best_new_turn.push(self.guess_best_move(best_new_turn, custom_epsilon=0, bothQ=True))
             
-            #if terminal after opponent move return negative of their last move estimate
+            move = self.guess_best_move(best_new_turn, custom_epsilon=0)
+            try:
+                if self.flip == 0:
+                    best_reward = self.reg2.predict([self.create_feature_vector(best_new_turn, move)])
+                else:
+                    best_reward = self.reg.predict([self.create_feature_vector(best_new_turn, move)])
+            except:
+                best_reward = 0
+            return best_reward
+            
+            
+        
+            #if terminal after opponent move return 0 else make estimate
             if bool(best_new_turn.legal_moves) == False:
+                if best_new_turn.is_checkmate() == True:
+                    return 0
+                else:
+                    return 0
+                
+            else:
+                move = self.guess_best_move(copy_state, custom_epsilon=0)
+                try:
+                    if self.flip == 0:
+                        best_reward = self.reg2.predict([self.create_feature_vector(copy_state, move)])
+                    else:
+                        best_reward = self.reg.predict([self.create_feature_vector(copy_state, move)])
+                except:
+                    best_reward = 0
+                r += best_reward# * -1
+                
+                move = self.guess_best_move(best_new_turn, custom_epsilon=0)
+                try:
+                    if self.flip == 0:
+                        best_reward = self.reg2.predict([self.create_feature_vector(best_new_turn, move)])
+                    else:
+                        best_reward = self.reg.predict([self.create_feature_vector(best_new_turn, move)])
+                except:
+                    best_reward = 0
+                r += best_reward
+                return r
                 move = self.guess_best_move(copy_state, custom_epsilon=0)
                 try:
                     best_opponent_reward = self.reg.predict([self.create_feature_vector(copy_state, move)])
                 except:
                     best_reward = 0
                 return best_opponent_reward * -1
+                if best_new_turn.is_checkmate() == True:
+                    return -1
+                else:
+                    return 0
             #else make best policy move
-            else:
+            
                 
                 copy_state = deepcopy(best_new_turn)
                 best_new_turn.push(self.guess_best_move(best_new_turn,custom_epsilon=0))
 
                 
-                # if terminal now, return last turn estimate
+                # if terminal now, return actual reward value
                 
                 if bool(best_new_turn.legal_moves) == False:
+                    if best_new_turn.is_checkmate() == True:
+                        return 1
+                    else:
+                        return 0
+                
+                else:
+                    # return q estimate
                     move = self.guess_best_move(copy_state, custom_epsilon=0)
                     try:
-                        best_reward = self.reg.predict([self.create_feature_vector(copy_state, move)])
+                        best_reward = self.reg.predict([self.create_feature_vector(best_new_turn, move)])
                     except:
                         best_reward = 0
                     return best_reward
-                # else opponent make best move again
-                else:
 
-                    copy_state = deepcopy(best_new_turn)
+
+                    '''copy_state = deepcopy(best_new_turn)
                     best_new_turn.push(self.guess_best_move(best_new_turn,custom_epsilon=0))
                     
                     #if terminal after opponent best guess move return negative reward
@@ -226,7 +309,7 @@ class ChessAI():
                         best_reward = 0
             
                 
-            return best_reward
+            return best_reward'''
         #raise NotImplementedError
 
     def get_piece_ave(self, state):
@@ -249,18 +332,23 @@ class ChessAI():
         return b_ave, b_total, b_count, w_ave, w_total, w_count
 
     def create_feature_vector(self, state, move):
-        feature_vector = [1]#self.get_state(state)
+        #self.get_state(state)
         
         #print(move.to_square)
         copy_state = deepcopy(state)
+        copy_state.push(move)
         #feature_vector = self.get_state(copy_state)
-
+        feature_vector = [1]
+        '''if copy_state.is_checkmate() == True:
+            feature_vector.append(1)
+        else:
+            feature_vector.append(0)'''
         #print(state)
-        try:
+        '''try:
             copy_state.push(move)
         except:
             copy_state.pop()
-            copy_state.push(move)
+            copy_state.push(move)'''
 
         state_vector = []
         copy_vector = []
@@ -284,11 +372,27 @@ class ChessAI():
         else:
             feature_vector.append(0)
 
+        #feature_vector.append(len(state.attacks(move.from_square))/64)
+        #feature_vector.append(len(copy_state.attacks(move.to_square))/64)
+        
 
+        if state.is_attacked_by(copy_state.turn, move.from_square) == True:
+            feature_vector.append(1)
+        else:
+            feature_vector.append(0)
+        if state.is_attacked_by(state.turn, move.to_square) == True:
+            feature_vector.append(1)
+        else:
+            feature_vector.append(0)
+
+        '''if state.is_pinned(copy_state.turn, move.to_square) == True:
+            feature_vector.append(1)
+        else:
+            feature_vector.append(0)'''
         
         
 
-        b_ave, b_total, b_count, w_ave, w_total, w_count = self.get_piece_ave(state)
+        '''b_ave, b_total, b_count, w_ave, w_total, w_count = self.get_piece_ave(state)
         copy_b_ave, copy_b_total, copy_b_count, copy_w_ave, copy_w_total, copy_w_count = self.get_piece_ave(copy_state)
 
         feature_vector.append(w_count/64)
@@ -307,12 +411,12 @@ class ChessAI():
         #print(feature_vector)
         #print(self.get_action(str(move)))
         #feature_vector.append(1)
-        #print(feature_vector)
+        #print(feature_vector)'''
         return feature_vector
 
 
 
-    def guess_best_move(self, state, custom_epsilon=None):
+    def guess_best_move(self, state, custom_epsilon=None,bothQ=None):
         # Guess the best move to take based on the prediciting the value of the state/action pair.
         # Will select a random move with the probability of epsilon
         random_number = randrange(100)
@@ -321,11 +425,27 @@ class ChessAI():
         available_moves = list(state.legal_moves)
         for move in available_moves:
             try:
-                estimated_values.update({move: self.reg.predict([self.create_feature_vector(state, move)])})
+                q1 = self.reg.predict([self.create_feature_vector(state, move)])
+                
             except Exception as e:
                 #print(e)
-                estimated_values.update({move: 0})
+                q1 = 0
+            try:
+                q2 = self.reg2.predict([self.create_feature_vector(state, move)])
+                
+            except Exception as e:
+                #print(e)
+                q2 = 0
+            dq = (q1 + q2)/2    
             
+            if bothQ==True:
+                estimated_values.update({move: dq})
+            elif self.flip == 0:
+                estimated_values.update({move: q1})
+            elif self.flip == 1:
+                estimated_values.update({move: q2})    
+
+
         best_moves = [key for key, value in estimated_values.items() if value == max(estimated_values.values())]
         
         #print(estimated_values)
@@ -394,7 +514,7 @@ def train(n,reload=None):
     # Play n games
     for i in range(n):
 
-        if player.discount < 0.95:
+        if player.discount < 0.1:
             player.discount += 1/n
         count += 1
         print(f"Playing training game {i + 1}")
@@ -426,48 +546,39 @@ def train(n,reload=None):
             
             
             #player.alpha = 1 - (checkmate_count/count)    
+            
+            
+
             # Keep track of current state and action
-            state = game.board_fen()
+            state = deepcopy(game)
+            action = player.guess_best_move(game, bothQ=True)#player.choose_action(game, epsilon)
+                        
             
-            action = player.guess_best_move(game)#player.choose_action(game, epsilon)
-            
-            
-
-            
-            copy_game = deepcopy(game)
-            
-
-            # Make move
-            game_copy = deepcopy(game)
-            game.push(action)
             # Keep track of last state and action
-            last[game.turn]["state"] = game_copy
+            last[game.turn]["state"] = state
             last[game.turn]["action"] = action
             
-            #copy_last_move = copy_game.pop()
+            # Make move
+            game.push(action)
+            new_state = deepcopy(game)
             
-            '''if game.turn == False:
-                print(f"White's move: {action}")
-            else:
-                print(f"Black's move: {action}")
-            print("")
-            print("")'''
+            
             # When game is over, update Q values with rewards
             if game.is_checkmate() == True:
-                '''print(f"before win turn: {game_copy.turn}")
-                print(game.turn)'''
+                
+                
                 #player.update_model(game_copy, action, game, -5)
-                '''if game.turn == False:
-                    checkmate_count += 1'''
+                
+                
                 checkmate_count += 1   
                 print(f"Checkmate ratio: {(checkmate_count/count*100)}")
                 
-                player.update_model(last[game.turn]["state"], last[game.turn]["action"], copy_game, -1)
+                player.update_model(state, action, new_state, -1)
                 #if game.turn == False:
                 player.update_model(
-                    game_copy,
-                    action,
-                    game,
+                    last[game.turn]["state"],
+                    last[game.turn]["action"],
+                    new_state,
                     1
                 )
                 '''elif game.turn == True:
@@ -479,25 +590,29 @@ def train(n,reload=None):
                     )'''
                 break
             elif game.is_game_over() == True and game.is_checkmate() == False:
-                player.update_model(last[game.turn]["state"], last[game.turn]["action"], copy_game, 0)
+                player.update_model(state, action, new_state, 0)
                 player.update_model(
-                    game_copy,
-                    action,
-                    game,
+                    last[game.turn]["state"],
+                    last[game.turn]["action"],
+                    new_state,
                     0
                 )
                 break
             
                 
             # If game is continuing, no rewards yet
+            
             elif game.is_game_over() == False:
-                player.update_model(last[game.turn]["state"], last[game.turn]["action"], copy_game, 0)
-                player.update_model(
-                    copy_game,
-                    action,
-                    game,
-                    0
-                )
+                player.update_model(state, action, new_state, 0)
+                try:
+                    player.update_model(
+                        last[game.turn]["state"],
+                        last[game.turn]["action"],
+                        new_state,
+                        0
+                        )
+                except:
+                    player.update_model(state, action, new_state, 0)
 
     print("Done training")
 
@@ -539,7 +654,7 @@ def play(ai, human_player=None):
             print("White's turn")
             if bool(board.legal_moves):
                 #board.push(ai.choose_action(board))
-                board.push(ai.guess_best_move(board,custom_epsilon=0))
+                board.push(ai.guess_best_move(board,custom_epsilon=0,bothQ=True))
                 
                 
             else: print(moves)
@@ -550,7 +665,7 @@ def play(ai, human_player=None):
                 #move = chess.Move.from_uci(str(ai.choose_action(board)))
                 if human_player == False:
                     board.push(ai.choose_action(board))
-                    #board.push(ai.guess_best_move(board,custom_epsilon=0))
+                    #board.push(ai.guess_best_move(board,custom_epsilon=0,bothQ=True))
 
                 human_move = ""
                 while board.turn == chess.BLACK and human_player == True:

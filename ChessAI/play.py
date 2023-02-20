@@ -51,11 +51,12 @@ print(len(state))
 
 num_actions = 0
 
-ai = train(250,reload=None)
+
+ai = train(10,reload=False)
 #ai = train(0,reload=True)
 
-for i in range(50):
-    ai = train(250,reload=True)
+'''for i in range(10):
+    ai = train(100,reload=True)'''
 
 
 play(ai,human_player=None)
